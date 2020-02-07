@@ -1,0 +1,23 @@
+{
+  "name": "evado-api-document",
+  "version": "0.1.0",
+  "description": "Evado application programming interface module for data access",
+  "author": {
+    "name": "Maxim Khorin",
+    "email": "maksimovichu@gmail.com"
+  },
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=12.13.1"
+  },
+  "homepage": "https://github.com/mkhorin/evado-api-document",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mkhorin/evado-api-document.git"
+  },
+  "dependencies": {
+  },
+  "scripts": {
+    "test": "mocha test/run --recursive"
+  }
+}
