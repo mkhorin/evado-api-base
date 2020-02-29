@@ -7,9 +7,9 @@ const Base = require('areto/base/Base');
 
 module.exports = class SearchFilterHelper extends Base {
 
-    static getColumns (searchAttrs, depth) {
+    static getColumns (attrs, depth) {
         const columns = [];
-        for (const attr of searchAttrs) {
+        for (const attr of attrs) {
             let data = {
                 name: attr.name,
                 label: attr.title,

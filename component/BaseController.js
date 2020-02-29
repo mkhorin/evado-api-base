@@ -13,7 +13,7 @@ module.exports = class BaseController extends Base {
     }
 
     getModelQuery (id) {
-        return this.meta.view.findById(id, this.getSpawnConfig()).withFormDefaults();
+        return this.meta.view.findById(id, this.getSpawnConfig()).withFormData();
     }
 
     async getModel (id) {

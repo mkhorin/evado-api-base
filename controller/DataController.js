@@ -30,7 +30,7 @@ module.exports = class DataController extends Base {
     async actionList () {
         await this.setMetaParams(this.getPostParams(), 'list');
         await this.security.resolveOnList(this.meta.view);
-        const query = this.meta.view.find(this.getSpawnConfig()).withListDefaults().withTitle();
+        const query = this.meta.view.find(this.getSpawnConfig()).withListData().withTitle();
         query.setRelatedFilter(this.assignSecurityModelFilter.bind(this));
         const list = this.spawn('component/MetaList', {controller: this, query});
         const items = await list.getList();
@@ -54,12 +54,12 @@ module.exports = class DataController extends Base {
         await this.security.resolveOnCreate(view);
         const model = view.spawnModel(this.getSpawnConfig());
         await model.setDefaultValues();
-        await this.save(params.data, model, 'create');
+        await this.save(params, model, 'create');
     }
 
     async actionUpdate () {
         const params = this.getPostParams();
-        this.setMetaParams(params, 'update');
+        this.setMetaParams(params, 'edit');
         const model = await this.getModel(params.id);
         await this.security.resolveOnUpdate(model);
         if (!this.security.access.canUpdate()) {
@@ -71,7 +71,7 @@ module.exports = class DataController extends Base {
         if (model.isReadOnlyState()) {
             throw new Forbidden('Read-only state');
         }
-        await this.save(params.data, model, 'update');
+        await this.save(params, model, 'update');
     }
 
     async actionDelete () {
@@ -132,9 +132,9 @@ module.exports = class DataController extends Base {
         return this.meta;
     }
 
-    async save (data, model, action) {
+    async save ({data}, model, action) {
         const attrs = this.security.getForbiddenAttrs(action);
-        model.load({[model.class.name]: data}, attrs);
+        model.load(data, attrs);
         await model.save()
             ? this.sendText(model.getId())
             : this.handleModelError(model);

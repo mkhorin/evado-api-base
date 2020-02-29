@@ -46,13 +46,13 @@ module.exports = class ExtraMeta extends Base {
 
     getClassData (item) {
         const data = this.getViewData(item);
-        data.searchColumns = SearchFilterHelper.getColumns(item.searchAttrs);
+        data.filterColumns = SearchFilterHelper.getColumns(item.searchAttrs);
         return data;
     }
 
     prepareView (view, classData) {
         const data = this.getViewData(view);
-        data.searchColumns = classData.searchColumns;
+        data.filterColumns = classData.filterColumns;
         this._data[view.id] = data;
     }
 
@@ -63,8 +63,16 @@ module.exports = class ExtraMeta extends Base {
             columnMap: IndexHelper.indexObjects(columns, 'name'),
             modalSortNames: this.getModalSortNames(view),
             file: this.getFileAttrData(view),
-            commands: view.getOption('commands')
+            commands: this.getViewCommands(view)
         };
+    }
+
+    getViewCommands (view) {
+        return Object.assign({
+            create: true,
+            edit: true,
+            delete: true
+        }, view.options.commands);
     }
 
     getModalSortNames (view) {
@@ -109,11 +117,11 @@ module.exports = class ExtraMeta extends Base {
             format: this.getAttrFormat(attr),
             hidden: attr.isHidden(),
             translate: 'meta.' + attr.translationKey,
-            maxCellHeight: attr.getOption('maxCellHeight')
+            maxCellHeight: attr.getOption('maxCellHeight'),
+            momentFormat: attr.getOption('momentFormat')
         };
         if (attr.isDate()) {
             data.utc = attr.isUTC();
-            data.momentFormat = attr.getOption('momentFormat');
         }
         return data;
     }
@@ -123,7 +131,15 @@ module.exports = class ExtraMeta extends Base {
             return this.getRelationAttrFormat(attr);
         }
         const format = attr.getFormat();
-        return !format && attr.isFile() ? 'thumbnail' : format;
+        if (format) {
+            return format;
+        }
+        if (attr.isFile()) {
+            return 'thumbnail';
+        }
+        if (attr.isTime()) {
+            return 'time';
+        }
     }
 
     getRelationAttrFormat (attr) {
@@ -134,7 +150,7 @@ module.exports = class ExtraMeta extends Base {
         if (!format) {
             format = {name: attr.isThumbnail() ? 'thumbnail' : 'link'};
         }
-        if (!format.url) {
+        if (!format.url && attr.commandMap.edit) {
             format.url = this.urlManager.resolve(['model/update', {c: attr.relation.refClass.id}]);
         }
         return format;
@@ -146,18 +162,6 @@ module.exports = class ExtraMeta extends Base {
 
     getClassAttrData () {
         return {};
-    }
-
-    getCommandData (attr, data) {
-        return {
-            link: true,
-            unlink: true,
-            create: true,
-            update: true,
-            delete: true,
-            ...data.commands,
-            ...attr.options.commands
-        };
     }
 
     getModelData (model) {
