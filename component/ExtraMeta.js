@@ -81,7 +81,7 @@ module.exports = class ExtraMeta extends Base {
         const behaviors = view.class.getBehaviorsByClass(Behavior);
         const names = ArrayHelper.getPropertyValues(behaviors, 'attrName');
         for (const attr of view.attrs) {
-            if (names.includes(attr.name) && !attr.isReadOnly()) {
+            if (attr.isSortable() && !attr.isReadOnly() && names.includes(attr.name)) {
                 result.push(attr.name);
             }
         }
@@ -176,7 +176,9 @@ module.exports = class ExtraMeta extends Base {
         const param = `v=${view.getViewId()}`;
         const fileAttr = view.class.getFileBehaviorAttr();
         const viewAttr = view.getAttr(fileAttr.name) || fileAttr;
-        const thumbnail = this.hasThumbnail && viewAttr.getThumbnail();
+        const preview = this.hasThumbnail && viewAttr.getThumbnail();
+        const download = `api/document/file/download?${param}`;
+        const thumbnail = preview === true ? download : preview ? `api/document/file/thumbnail?${param}` : null;
         return {
             imageOnly: config.imageOnly,
             maxSize: config.maxSize,
@@ -187,8 +189,8 @@ module.exports = class ExtraMeta extends Base {
             nameAttr: config.nameAttr,
             delete: `file/delete`,
             upload: `api/document/file/upload?${param}`,
-            download: `api/document/file/download?${param}`,
-            thumbnail: thumbnail ? `api/document/file/thumbnail?${param}` : null
+            download,
+            thumbnail
         };
     }
 

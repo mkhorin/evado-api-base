@@ -8,7 +8,8 @@ const Base = require('areto/base/Base');
 module.exports = class SearchFilterHelper extends Base {
 
     static getColumns (attrs, depth) {
-        const columns = [];
+        let classItems = null;
+        let columns = [];
         for (const attr of attrs) {
             let data = {
                 name: attr.name,
@@ -25,6 +26,9 @@ module.exports = class SearchFilterHelper extends Base {
                 this.setEnumData(attr, data);
             } else if (attr.isState()) {
                 this.setStateData(attr, data);
+            } else if (attr.isClass()) {
+                this.setClassData(attr, data, classItems);
+                classItems = data.items;
             }
             if (data) {
                 columns.push(data);
@@ -69,5 +73,17 @@ module.exports = class SearchFilterHelper extends Base {
             value: state.name,
             text: state.title
         }));
+    }
+
+    static setClassData (attr, data, items) {
+        data.type = 'selector';
+        if (items) {
+            data.items = items;
+        } else {
+            data.items = attr.class.meta.classes.map(item => ({
+                value: item.name,
+                text: item.title
+            }));
+        }
     }
 };

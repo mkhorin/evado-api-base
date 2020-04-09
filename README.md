@@ -2,4 +2,4 @@
 
 ### Application programming interface module for data access
 
-[Evado Kit](https://github.com/mkhorin/evado)
+[Evado Platform](https://github.com/mkhorin/evado)
