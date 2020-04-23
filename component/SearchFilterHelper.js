@@ -8,8 +8,7 @@ const Base = require('areto/base/Base');
 module.exports = class SearchFilterHelper extends Base {
 
     static getColumns (attrs, depth) {
-        let classItems = null;
-        let columns = [];
+        const columns = [];
         for (const attr of attrs) {
             let data = {
                 name: attr.name,
@@ -27,8 +26,7 @@ module.exports = class SearchFilterHelper extends Base {
             } else if (attr.isState()) {
                 this.setStateData(attr, data);
             } else if (attr.isClass()) {
-                this.setClassData(attr, data, classItems);
-                classItems = data.items;
+                this.setClassData(attr, data);
             }
             if (data) {
                 columns.push(data);
@@ -53,7 +51,7 @@ module.exports = class SearchFilterHelper extends Base {
         return attr.getType();
     }
 
-    static getRelationData (data, attr, depth) {
+    static getRelationData (data, attr, depth, module) {
         if (depth > 0 && attr.relation.refClass) {
             data.columns = this.getColumns(attr.relation.refClass.searchAttrs, depth - 1);
         }
@@ -69,21 +67,14 @@ module.exports = class SearchFilterHelper extends Base {
 
     static setStateData (attr, data) {
         data.type = 'selector';
-        data.items = attr.class.states.map(state => ({
-            value: state.name,
-            text: state.title
-        }));
+        data.items = {};
+        for (const state of attr.class.states) {
+            data.items[state.name] = state.title;
+        }
     }
 
-    static setClassData (attr, data, items) {
+    static setClassData (attr, data) {
         data.type = 'selector';
-        if (items) {
-            data.items = items;
-        } else {
-            data.items = attr.class.meta.classes.map(item => ({
-                value: item.name,
-                text: item.title
-            }));
-        }
+        data.url = 'api/document/meta/list-class-select';
     }
 };
