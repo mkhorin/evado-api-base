@@ -9,7 +9,7 @@ module.exports = class ExtraMeta extends Base {
 
     init () {
         super.init();
-        this.hasThumbnail = this.module.get('fileStorage').hasThumbnail();
+        this.thumbnailEnabled = this.module.get('fileStorage').isThumbnailEnabled();
         this.urlManager = this.module.get('urlManager');
     }
 
@@ -78,7 +78,7 @@ module.exports = class ExtraMeta extends Base {
     getModalSortNames (view) {
         const result = [];
         const Behavior = require('evado-meta-document/behavior/SortOrderBehavior');
-        const behaviors = view.class.getBehaviorsByClass(Behavior);
+        const behaviors = view.getBehaviorsByClass(Behavior);
         const names = ArrayHelper.getPropertyValues(behaviors, 'attrName');
         for (const attr of view.attrs) {
             if (attr.isSortable() && !attr.isReadOnly() && names.includes(attr.name)) {
@@ -110,6 +110,7 @@ module.exports = class ExtraMeta extends Base {
             name: attr.name,
             label: attr.title,
             type: attr.getType(),
+            titleName: `${attr.name}_title`,
             searchable: attr.data.commonSearchable,
             sortable: attr.data.sortable,
             escape: attr.escaping,
@@ -139,6 +140,9 @@ module.exports = class ExtraMeta extends Base {
         }
         if (attr.isTime()) {
             return 'time';
+        }
+        if (attr.isClass() || attr.isEmbeddedModel() || attr.isState()) {
+            return 'title';
         }
     }
 
@@ -176,7 +180,7 @@ module.exports = class ExtraMeta extends Base {
         const param = `v=${view.getViewId()}`;
         const fileAttr = view.class.getFileBehaviorAttr();
         const viewAttr = view.getAttr(fileAttr.name) || fileAttr;
-        const preview = this.hasThumbnail && viewAttr.getThumbnail();
+        const preview = this.thumbnailEnabled && viewAttr.getThumbnail();
         const download = `api/document/file/download?${param}`;
         const thumbnail = preview === true ? download : preview ? `api/document/file/thumbnail?${param}` : null;
         return {

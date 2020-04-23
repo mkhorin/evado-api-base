@@ -1,5 +1,5 @@
 # Evado Document API
 
-### Application programming interface module for data access
+### Data access app programming interface module
 
 [Evado Platform](https://github.com/mkhorin/evado)

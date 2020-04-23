@@ -30,37 +30,33 @@ module.exports = class MetaController extends Base {
     }
 
     actionListClassSelect () {
-        this.sendJson(MetaSelectHelper.getLabelItems(this.docMeta.classes));
+        const items = this.filterBySearch(this.docMeta.classes);
+        this.sendJson(MetaSelectHelper.getLabelMap(items));
     }
 
     actionListViewSelect () {
         const metaClass = this.getClassFromRequest();
-        this.sendJson(MetaSelectHelper.getLabelItems(metaClass.views));
+        const items = this.filterBySearch(metaClass.views);
+        this.sendJson(MetaSelectHelper.getLabelMap(items));
     }
 
     actionListAttrSelect () {
         const metaClass = this.getClassFromRequest();
         const metaView = metaClass.getView(this.getPostParam('view')) || metaClass;
-        this.sendJson(MetaSelectHelper.getLabelItems(metaView.attrs));
-    }
-
-    async actionListObjectSelect () {
-        const metaClass = this.getClassFromRequest();
-        const metaView = metaClass.getView(this.getPostParam('view')) || metaClass;
-        const request = this.getPostParams();
-        const query = metaView.find(this.getSpawnConfig());
-        const result = await this.spawn('meta/MetaSelect2', {request, query}).getList();
-        return this.sendJson(result);
+        const items = this.filterBySearch(metaView.attrs);
+        this.sendJson(MetaSelectHelper.getLabelMap(items));
     }
 
     actionListStateSelect () {
         const {states} = this.getClassFromRequest();
-        this.sendJson(MetaSelectHelper.getLabelItems(states));
+        const items = this.filterBySearch(states);
+        this.sendJson(MetaSelectHelper.getLabelMap(items));
     }
 
     actionListTransitionSelect () {
         const {transitions} = this.getClassFromRequest();
-        this.sendJson(MetaSelectHelper.getLabelItems(transitions));
+        const items = this.filterBySearch(transitions);
+        this.sendJson(MetaSelectHelper.getLabelMap(items));
     }
 
     getClassFromRequest () {
@@ -70,8 +66,24 @@ module.exports = class MetaController extends Base {
         }
         throw new NotFound('Class not found');
     }
+
+    filterBySearch (items) {
+        const text = this.getPostParam('search');
+        if (typeof text !== 'string' || text.length < 2) {
+            return items;
+        }
+        const regex = new RegExp(EscapeHelper.escapeRegex(text), 'i');
+        const result = [];
+        for (const item of items) {
+            if (regex.test(item.name) || regex.test(item.title)) {
+                result.push(item);
+            }
+        }
+        return result;
+    }
 };
 module.exports.init(module);
 
+const EscapeHelper = require('areto/helper/EscapeHelper');
 const NotFound = require('areto/error/NotFoundHttpException');
 const MetaSelectHelper = require('../component/MetaSelectHelper');

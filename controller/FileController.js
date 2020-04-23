@@ -26,7 +26,8 @@ module.exports = class FileController extends Base {
         }
         this.sendJson({
             id: model.getId(),
-            size: model.get('size')
+            mime: model.getMime(),
+            size: model.getSize()
         });
     }
 

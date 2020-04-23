@@ -28,11 +28,20 @@ module.exports = class DataController extends Base {
     }
 
     async actionList () {
-        await this.setMetaParams(this.getPostParams(), 'list');
+        this.setMetaParams(this.getPostParams(), 'list');
         await this.security.resolveOnList(this.meta.view);
         const query = this.meta.view.find(this.getSpawnConfig()).withListData().withTitle();
         query.setRelatedFilter(this.assignSecurityModelFilter.bind(this));
         const list = this.spawn('component/MetaList', {controller: this, query});
+        const items = await list.getList();
+        this.sendJson(items);
+    }
+
+    async actionListSelect () {
+        this.setMetaParams(this.getPostParams(), 'list');
+        await this.security.resolveOnList(this.meta.view);
+        const query = this.meta.view.find(this.getSpawnConfig()).withTitle();
+        const list = this.spawn('meta/MetaSelect2', {controller: this, query});
         const items = await list.getList();
         this.sendJson(items);
     }
@@ -42,6 +51,15 @@ module.exports = class DataController extends Base {
         this.setMetaParams(params, 'read');
         const model = await this.getModel(params.id);
         await this.security.resolveOnRead(model);
+        this.sendJson(model.output(this.security));
+    }
+
+    async actionDefaults () {
+        const params = this.getPostParams();
+        const {view} = this.setMetaParams(params, 'create'); // read defaults to create
+        await this.security.resolveOnCreate(view);
+        const model = view.spawnModel(this.getSpawnConfig());
+        await model.setDefaultValues();
         this.sendJson(model.output(this.security));
     }
 
@@ -95,9 +113,14 @@ module.exports = class DataController extends Base {
         if (!this.security.access.canUpdate()) {
             throw new Forbidden;
         }
+        if (model.isTransiting()) {
+            throw new Forbidden('Transition in progress...');
+        }
         const transit = this.createMetaTransit();
         await transit.execute(model, transition);
-        this.sendText(model.getId());
+        await model.hasError()
+            ? this.handleModelError(model)
+            : this.sendText(model.getId());
     }
 
     getModelQuery (id) {
@@ -133,8 +156,8 @@ module.exports = class DataController extends Base {
     }
 
     async save ({data}, model, action) {
-        const attrs = this.security.getForbiddenAttrs(action);
-        model.load(data, attrs);
+        const excludes = this.security.getForbiddenAttrs(action);
+        model.load(data, excludes);
         await model.save()
             ? this.sendText(model.getId())
             : this.handleModelError(model);
