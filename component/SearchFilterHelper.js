@@ -75,6 +75,6 @@ module.exports = class SearchFilterHelper extends Base {
 
     static setClassData (attr, data) {
         data.type = 'selector';
-        data.url = 'api/document/meta/list-class-select';
+        data.url = 'api/base/meta/list-class-select';
     }
 };

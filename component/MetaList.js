@@ -11,7 +11,11 @@ module.exports = class MetaList extends Base {
         this._models = await this.query.all();
     }
 
-    getRenderRelatedHandler (attr) {
+    getRenderRelationHandler () {
+        return null;
+    }
+
+    getRenderRelatedHandler () {
         return this.renderRelatedDefault;
     }
 };

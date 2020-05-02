@@ -27,6 +27,16 @@ module.exports = class DataController extends Base {
         this.extraMeta = this.module.get('extraMeta');
     }
 
+    async actionCount () {
+        this.setMetaParams(this.getPostParams(), 'list');
+        await this.security.resolveOnList(this.meta.view);
+        const query = this.meta.view.find(this.getSpawnConfig());
+        query.setRelatedFilter(this.assignSecurityModelFilter.bind(this));
+        const list = this.spawn('component/MetaList', {controller: this, query});
+        const counter = await list.count();
+        this.sendText(counter);
+    }
+
     async actionList () {
         this.setMetaParams(this.getPostParams(), 'list');
         await this.security.resolveOnList(this.meta.view);
@@ -48,7 +58,7 @@ module.exports = class DataController extends Base {
 
     async actionRead () {
         const params = this.getPostParams();
-        this.setMetaParams(params, 'read');
+        this.setMetaParams(params, 'edit');
         const model = await this.getModel(params.id);
         await this.security.resolveOnRead(model);
         this.sendJson(model.output(this.security));

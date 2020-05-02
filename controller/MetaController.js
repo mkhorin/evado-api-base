@@ -30,7 +30,7 @@ module.exports = class MetaController extends Base {
     }
 
     actionListClassSelect () {
-        const items = this.filterBySearch(this.docMeta.classes);
+        const items = this.filterBySearch(this.baseMeta.classes);
         this.sendJson(MetaSelectHelper.getLabelMap(items));
     }
 
@@ -60,7 +60,7 @@ module.exports = class MetaController extends Base {
     }
 
     getClassFromRequest () {
-        const metaClass = this.docMeta.getClass(this.getPostParam('class'));
+        const metaClass = this.baseMeta.getClass(this.getPostParam('class'));
         if (metaClass) {
             return metaClass;
         }

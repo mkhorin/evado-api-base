@@ -9,7 +9,7 @@ module.exports = class BaseController extends Base {
 
     constructor (config) {
         super(config);
-        this.docMeta = this.module.getMeta('document');
+        this.baseMeta = this.module.getBaseMeta();
     }
 
     getModelQuery (id) {
@@ -25,24 +25,31 @@ module.exports = class BaseController extends Base {
         return model;
     }
 
-    setClassMetaParams (className) {
-        this.meta.class = this.docMeta.getClass(className);
-        if (!this.meta.class) {
-            throw new BadRequest('Class not found', className);
+    getMetaClass (name) {
+        const metaClass = this.baseMeta.getClass(name);
+        if (!metaClass) {
+            throw new BadRequest(`Class not found: ${name}`);
         }
+        return metaClass
     }
 
-    setViewMetaParams (viewName, defaultViewName) {
-        let view = null;
-        if (viewName) {
-            view = this.meta.class.getView(viewName);
-            if (!view) {
-                throw new BadRequest('View not found', `${viewName}.${this.meta.class.id}`);
-            }
-        } else if (defaultViewName) {
-            view = this.meta.class.getView(defaultViewName);
+    getMetaView (name, metaClass, defaults) {
+        if (!name) {
+            return (defaults && metaClass.getView(defaults)) || metaClass;
         }
-        this.meta.view = view || this.meta.class;
+        const view = metaClass.getView(name);
+        if (!view) {
+            throw new BadRequest(`View not found: ${name}.${metaClass.id}`);
+        }
+        return view;
+    }
+
+    setClassMetaParams (name) {
+        this.meta.class = this.getMetaClass(name);
+    }
+
+    setViewMetaParams (name, defaultName) {
+        this.meta.view = this.getMetaView(name, this.meta.class, defaultName);
     }
 
     setAttrMetaParams (param = this.getQueryParam('a')) {
@@ -51,7 +58,7 @@ module.exports = class BaseController extends Base {
         this.setViewMetaParams(viewName);
         this.meta.attr = this.meta.view.getAttr(attrName);
         if (!this.meta.attr) {
-            throw new BadRequest('Unknown meta attribute', `${attrName}.${this.meta.view.id}`);
+            throw new BadRequest(`Attribute not found: ${attrName}.${this.meta.view.id}`);
         }
     }
 };

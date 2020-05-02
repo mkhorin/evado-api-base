@@ -9,9 +9,8 @@ module.exports = class RawFile extends Base {
 
     createValidators () {
         const validators = super.createValidators();
-        const config = this.metaAttr.class.FileBehaviorConfig;
-        if (config.rule) {
-            const validator = this.createValidator(config.rule);
+        if (this.fileBehavior.rule) {
+            const validator = this.createValidator(this.fileBehavior.rule);
             if (validator) {
                 validators.push(validator);
             }

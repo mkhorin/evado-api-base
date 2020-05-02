@@ -7,14 +7,22 @@ const Base = require('evado/component/meta/ExtraMeta');
 
 module.exports = class ExtraMeta extends Base {
 
+    constructor (config) {
+        super({
+            downloadUrl: 'api/base/file/download',
+            thumbnailUrl: 'api/base/file/thumbnail',
+            uploadUrl: 'api/base/file/upload',
+            ...config
+        });
+    }
+
     init () {
         super.init();
-        this.thumbnailEnabled = this.module.get('fileStorage').isThumbnailEnabled();
         this.urlManager = this.module.get('urlManager');
     }
 
     prepare () {
-        this.prepareMeta(this.metaHub.get('document'));
+        this.prepareMeta(this.metaHub.get('base'));
     }
 
     getData ({id}) {
@@ -77,9 +85,9 @@ module.exports = class ExtraMeta extends Base {
 
     getModalSortNames (view) {
         const result = [];
-        const Behavior = require('evado-meta-document/behavior/SortOrderBehavior');
+        const Behavior = require('evado-meta-base/behavior/SortOrderBehavior');
         const behaviors = view.getBehaviorsByClass(Behavior);
-        const names = ArrayHelper.getPropertyValues(behaviors, 'attrName');
+        const names = ArrayHelper.getPropertyValues('attrName', behaviors);
         for (const attr of view.attrs) {
             if (attr.isSortable() && !attr.isReadOnly() && names.includes(attr.name)) {
                 result.push(attr.name);
@@ -177,12 +185,14 @@ module.exports = class ExtraMeta extends Base {
         if (!config) {
             return null;
         }
+        const model = view.spawnModel({module: this.module});
+        const fileBehavior = model.createBehavior(config);
         const param = `v=${view.getViewId()}`;
-        const fileAttr = view.class.getFileBehaviorAttr();
-        const viewAttr = view.getAttr(fileAttr.name) || fileAttr;
-        const preview = this.thumbnailEnabled && viewAttr.getThumbnail();
-        const download = `api/document/file/download?${param}`;
-        const thumbnail = preview === true ? download : preview ? `api/document/file/thumbnail?${param}` : null;
+        const download = `${this.downloadUrl}?${param}`;
+        const attr = view.getAttr(config.attrName) || view.class.getAttr(config.attrName);
+        const size = attr.options.thumbnail || view.options.thumbnail;
+        const enabled = fileBehavior.getStorage().isThumbnailEnabled();
+        const thumbnail = enabled ? `${this.thumbnailUrl}?${param}` : download;
         return {
             imageOnly: config.imageOnly,
             maxSize: config.maxSize,
@@ -192,7 +202,7 @@ module.exports = class ExtraMeta extends Base {
             accept: config.accept,
             nameAttr: config.nameAttr,
             delete: `file/delete`,
-            upload: `api/document/file/upload?${param}`,
+            upload: `${this.uploadUrl}?${param}`,
             download,
             thumbnail
         };
@@ -204,19 +214,40 @@ module.exports = class ExtraMeta extends Base {
         if (!id || !config) {
             return null;
         }
+        const fileBehavior = model.createBehavior(config);
         const data = this.getModelData(model).file;
-        const file = model.get('file');
         const result = {
-            name: model.get('name') || file,
+            id,
+            name: model.get(config.Class.NAME_ATTR) || id,
             download: data.download + '&id=' + id,
-            size: config.Class.getSize(model),
-            file, id
+            size: config.Class.getSize(model)
         };
         if (data.thumbnail && config.Class.isImage(model)) {
             result.thumbnail = data.thumbnail + '&id=' + id;
             if (thumbnailSize) {
                 result.thumbnail += '&s=' + thumbnailSize;
             }
+        }
+        return result;
+    }
+
+    getRelationThumbnailData (attr, value) {
+        if (!value) {
+            return value;
+        }
+        const data = this.getData(attr.relation.refClass).file;
+        const config = attr.relation.refClass.FileBehaviorConfig;
+        if (!config) {
+            return value;
+        }
+        value = value.toString();
+        const result = {
+            id: value,
+            thumbnail: (data.thumbnail || data.download) + '&id=' + value,
+            name: value
+        };
+        if (attr.options.thumbnail) {
+            result.thumbnail += '&s=' + attr.options.thumbnail;
         }
         return result;
     }

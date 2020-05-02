@@ -5,10 +5,12 @@
 
 const Base = require('evado/component/base/BaseModule');
 
-module.exports = class DocumentModule extends Base {
+module.exports = class BaseApiModule extends Base {
 
-    constructor (config) {
-        super(config);
+    static getConstants () {
+        return {
+            NAME: 'base'
+        };
     }
 };
 module.exports.init(module);
