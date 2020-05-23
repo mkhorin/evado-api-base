@@ -149,7 +149,7 @@ module.exports = class ExtraMeta extends Base {
         if (attr.isTime()) {
             return 'time';
         }
-        if (attr.isClass() || attr.isEmbeddedModel() || attr.isState()) {
+        if (attr.enum || attr.isClass() || attr.isEmbeddedModel() || attr.isState()) {
             return 'title';
         }
     }
@@ -185,7 +185,7 @@ module.exports = class ExtraMeta extends Base {
         if (!config) {
             return null;
         }
-        const model = view.spawnModel({module: this.module});
+        const model = view.createModel({module: this.module});
         const fileBehavior = model.createBehavior(config);
         const param = `v=${view.getViewId()}`;
         const download = `${this.downloadUrl}?${param}`;

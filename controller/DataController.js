@@ -68,7 +68,7 @@ module.exports = class DataController extends Base {
         const params = this.getPostParams();
         const {view} = this.setMetaParams(params, 'create'); // read defaults to create
         await this.security.resolveOnCreate(view);
-        const model = view.spawnModel(this.getSpawnConfig());
+        const model = view.createModel(this.getSpawnConfig());
         await model.setDefaultValues();
         this.sendJson(model.output(this.security));
     }
@@ -80,7 +80,7 @@ module.exports = class DataController extends Base {
             throw new BadRequest('Unable to instantiate abstract class');
         }
         await this.security.resolveOnCreate(view);
-        const model = view.spawnModel(this.getSpawnConfig());
+        const model = view.createModel(this.getSpawnConfig());
         await model.setDefaultValues();
         await this.save(params, model, 'create');
     }
@@ -135,6 +135,9 @@ module.exports = class DataController extends Base {
 
     getModelQuery (id) {
         const query = super.getModelQuery(id);
+        if (this.meta.defaultViewAssigned) {
+            query.withStateView();
+        }
         query.setRelatedFilter(this.assignSecurityModelFilter.bind(this));
         return query;
     }
@@ -159,9 +162,10 @@ module.exports = class DataController extends Base {
         });
     }
 
-    setMetaParams (params, viewName) {
+    setMetaParams (params, defaultView) {
         this.setClassMetaParams(params.class);
-        this.setViewMetaParams(params.view, viewName);
+        this.setViewMetaParams(params.view, defaultView);
+        this.meta.defaultViewAssigned = !params.view;
         return this.meta;
     }
 

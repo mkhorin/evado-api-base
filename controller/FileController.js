@@ -18,7 +18,7 @@ module.exports = class FileController extends Base {
     async actionUpload () {
         this.setMetaParams();
         await this.security.resolveOnCreate(this.meta.view);
-        const model = this.meta.view.spawnModel(this.getSpawnConfig());
+        const model = this.meta.view.createModel(this.getSpawnConfig());
         const fileBehavior = this.createFileBehavior(model);
         const raw = this.spawn(fileBehavior.getRawFile(), {fileBehavior});
         if (await raw.isLimitReached(this.user)) {
