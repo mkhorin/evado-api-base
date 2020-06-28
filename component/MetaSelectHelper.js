@@ -23,6 +23,6 @@ module.exports = class MetaSelectHelper extends Base {
     }
 
     static getLabelText (item) {
-        return `${item.title} (${item.name})`;
+        return `${item.label} (${item.name})`;
     }
 };

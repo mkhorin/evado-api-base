@@ -1,7 +1,7 @@
 {
   "name": "evado-api-base",
-  "version": "1.4.0",
-  "description": "Evado Platform data access API module",
+  "version": "1.5.0",
+  "description": "Evado data access API module",
   "author": {
     "name": "Maxim Khorin",
     "email": "maksimovichu@gmail.com"

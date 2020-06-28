@@ -190,7 +190,6 @@ module.exports = class ExtraMeta extends Base {
         const param = `v=${view.getViewId()}`;
         const download = `${this.downloadUrl}?${param}`;
         const attr = view.getAttr(config.attrName) || view.class.getAttr(config.attrName);
-        const size = attr.options.thumbnail || view.options.thumbnail;
         const enabled = fileBehavior.getStorage().isThumbnailEnabled();
         const thumbnail = enabled ? `${this.thumbnailUrl}?${param}` : download;
         return {
@@ -214,7 +213,6 @@ module.exports = class ExtraMeta extends Base {
         if (!id || !config) {
             return null;
         }
-        const fileBehavior = model.createBehavior(config);
         const data = this.getModelData(model).file;
         const result = {
             id,
