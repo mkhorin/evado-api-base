@@ -72,7 +72,10 @@ module.exports = class DataController extends Base {
     async actionRead () {
         const params = this.getPostParams();
         this.setMetaParams(params, 'edit');
-        const model = await this.getModel(params.id);
+        const model = await this.getModelQuery(params.id).withAttrTitle().one();
+        if (!model) {
+            throw new NotFound('Object not found', `${params.id}.${this.meta.view.id}`);
+        }
         await this.security.resolveOnRead(model);
         this.sendJson(model.output(this.security));
     }
@@ -254,3 +257,4 @@ module.exports.init(module);
 
 const BadRequest = require('areto/error/BadRequestHttpException');
 const Forbidden = require('areto/error/ForbiddenHttpException');
+const NotFound = require('areto/error/NotFoundHttpException');
