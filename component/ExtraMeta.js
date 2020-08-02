@@ -124,8 +124,9 @@ module.exports = class ExtraMeta extends Base {
             escape: attr.escaping,
             grouping: attr.data.sortable,
             format: this.getAttrFormat(attr),
-            hidden: attr.isHidden(),
-            translate: 'meta.' + attr.translationKey,
+            hidden: this.isHiddenAttr(attr),
+            translate: `meta.${attr.view.translationKey}`,
+            translateData: attr.translatable ? `meta.${attr.translationKey}` : false,
             maxCellHeight: attr.getOption('maxCellHeight'),
             momentFormat: attr.getOption('momentFormat')
         };
@@ -133,6 +134,10 @@ module.exports = class ExtraMeta extends Base {
             data.utc = attr.isUTC();
         }
         return data;
+    }
+
+    isHiddenAttr (attr) {
+        return attr.isHidden() || (attr.isClassAttr() && attr.isBackRef() && !attr.isEagerLoading());
     }
 
     getAttrFormat (attr) {
@@ -163,7 +168,10 @@ module.exports = class ExtraMeta extends Base {
             format = {name: attr.isThumbnail() ? 'thumbnail' : 'link'};
         }
         if (!format.url && attr.commandMap.edit) {
-            format.url = this.urlManager.resolve(['model/update', {c: attr.relation.refClass.id}]);
+            format.url = this.urlManager.resolve(['model/update', {
+                c: attr.relation.refClass.id,
+                v: attr.eagerView.editView.viewName
+            }]);
         }
         return format;
     }
@@ -187,9 +195,8 @@ module.exports = class ExtraMeta extends Base {
         }
         const model = view.createModel({module: this.module});
         const fileBehavior = model.createBehavior(config);
-        const param = `v=${view.getViewId()}`;
+        const param = `c=${view.class.name}&v=${view === view.class ? '' : view.name}`;
         const download = `${this.downloadUrl}?${param}`;
-        const attr = view.getAttr(config.attrName) || view.class.getAttr(config.attrName);
         const enabled = fileBehavior.getStorage().isThumbnailEnabled();
         const thumbnail = enabled ? `${this.thumbnailUrl}?${param}` : download;
         return {

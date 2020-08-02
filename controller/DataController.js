@@ -72,10 +72,7 @@ module.exports = class DataController extends Base {
     async actionRead () {
         const params = this.getPostParams();
         this.setMetaParams(params, 'edit');
-        const model = await this.getModelQuery(params.id).withAttrTitle().one();
-        if (!model) {
-            throw new NotFound('Object not found', `${params.id}.${this.meta.view.id}`);
-        }
+        const model = await this.getModel(params.id, query => query.withReadData());
         await this.security.resolveOnRead(model);
         this.sendJson(model.output(this.security));
     }
@@ -86,6 +83,9 @@ module.exports = class DataController extends Base {
         await this.security.resolveOnCreate(view);
         const model = view.createModel(this.getSpawnConfig());
         await model.setDefaultValues();
+        await model.related.resolveEagers();
+        await model.related.resolveEmbeddedModels();
+        await model.resolveCalcValues();
         this.sendJson(model.output(this.security));
     }
 
@@ -95,6 +95,7 @@ module.exports = class DataController extends Base {
         if (this.meta.class.isAbstract()) {
             throw new BadRequest('Unable to instantiate abstract class');
         }
+        this.checkCsrfToken();
         await this.security.resolveOnCreate(view);
         const model = view.createModel(this.getSpawnConfig());
         await model.setDefaultValues();
@@ -104,21 +105,27 @@ module.exports = class DataController extends Base {
     async actionUpdate () {
         const params = this.getPostParams();
         this.setMetaParams(params, 'edit');
-        const model = await this.getModel(params.id);
+        let model = await this.getModel(params.id);
         await this.security.resolveOnUpdate(model);
-        if (!this.security.access.canUpdate()) {
+        const forbidden = !this.security.access.canUpdate();
+        if (forbidden && this.meta.view.forbiddenView) {
+            model = await this.getForbiddenViewModel(params.id);
+        } else if (forbidden) {
             throw new Forbidden;
         }
+        await this.security.resolveAttrsOnUpdate(model);
         if (model.isTransiting()) {
-            throw new Forbidden('Transition in progress...');
+            throw new Locked('Transition in progress...');
         }
         if (model.isReadOnlyState()) {
-            throw new Forbidden('Read-only state');
+            throw new Locked('Read-only state');
         }
+        this.checkCsrfToken();
         await this.save(params, model, 'update');
     }
 
     async actionDelete () {
+        this.checkCsrfToken();
         const params = this.getPostParams();
         this.setMetaParams(params);
         const model = await this.getModel(params.id);
@@ -128,6 +135,7 @@ module.exports = class DataController extends Base {
     }
 
     async actionDeleteMultiple () {
+        this.checkCsrfToken();
         const params = this.getPostParams();
         this.setMetaParams(params);
         if (!Array.isArray(params.ids)) {
@@ -153,14 +161,18 @@ module.exports = class DataController extends Base {
         if (!transition) {
             throw new BadRequest('No transition name specified');
         }
+        this.checkCsrfToken();
         this.setMetaParams(params);
-        const model = await this.getModel(params.id);
+        let model = await this.getModel(params.id);
         await this.security.resolveOnUpdate(model);
-        if (!this.security.access.canUpdate()) {
+        const forbidden = !this.security.access.canUpdate();
+        if (forbidden && this.meta.view.forbiddenView) {
+           model = await this.getForbiddenViewModel(params.id);
+        } else if (forbidden) {
             throw new Forbidden;
         }
         if (model.isTransiting()) {
-            throw new Forbidden('Transition in progress...');
+            throw new Locked('Transition in progress...');
         }
         const transit = this.createMetaTransit();
         await transit.execute(model, transition);
@@ -169,8 +181,14 @@ module.exports = class DataController extends Base {
             : this.sendText(model.getId());
     }
 
-    getModelQuery (id) {
-        const query = super.getModelQuery(id);
+    getForbiddenViewModel (id) {
+        this.meta.view = this.meta.view.forbiddenView;
+        this.meta.defaultViewAssigned = true;
+        return this.getModel(id);
+    }
+
+    getModelQuery () {
+        const query = super.getModelQuery(...arguments);
         if (this.meta.defaultViewAssigned) {
             query.withStateView();
         }
@@ -228,7 +246,7 @@ module.exports = class DataController extends Base {
             throw new BadRequest(`Master relation not found: ${master.attr.id}`);
         }
         if (relation.refClass !== this.meta.class) {
-            throw new BadRequest(`Invalid master: ${master.attr.id}`);
+            throw new BadRequest(`Meta class does not match master attribute reference class: ${master.attr.id}`);
         }
         if (!data.id) {
             master.model = master.view.createModel(this.getSpawnConfig());
@@ -236,7 +254,7 @@ module.exports = class DataController extends Base {
         }
         master.model = await master.view.findById(data.id, this.getSpawnConfig()).one();
         if (!master.model) {
-            throw new BadRequest(`Master instance not found: ${data.id}.${master.view.id}`);
+            throw new BadRequest(`Master object not found: ${data.id}.${master.view.id}`);
         }
         return master;
     }
@@ -255,6 +273,6 @@ module.exports = class DataController extends Base {
 };
 module.exports.init(module);
 
-const BadRequest = require('areto/error/BadRequestHttpException');
-const Forbidden = require('areto/error/ForbiddenHttpException');
-const NotFound = require('areto/error/NotFoundHttpException');
+const BadRequest = require('areto/error/http/BadRequest');
+const Forbidden = require('areto/error/http/Forbidden');
+const Locked = require('areto/error/http/Locked');

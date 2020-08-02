@@ -75,10 +75,9 @@ module.exports = class FileController extends Base {
         this.sendFile(file);
     }
 
-    setMetaParams (param = this.getQueryParam('v')) {
-        const [viewName, className] = String(param).split('.');
-        this.setClassMetaParams(className);
-        this.setViewMetaParams(viewName);
+    setMetaParams () {
+        this.setClassMetaParams(this.getQueryParam('c'));
+        this.setViewMetaParams(this.getQueryParam('v'));
         return this.meta;
     }
 
@@ -91,6 +90,6 @@ module.exports = class FileController extends Base {
 };
 module.exports.init(module);
 
-const BadRequest = require('areto/error/BadRequestHttpException');
-const NotFound = require('areto/error/NotFoundHttpException');
+const BadRequest = require('areto/error/http/BadRequest');
+const NotFound = require('areto/error/http/NotFound');
 const FileHelper = require('areto/helper/FileHelper');

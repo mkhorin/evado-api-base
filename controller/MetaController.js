@@ -85,5 +85,5 @@ module.exports = class MetaController extends Base {
 module.exports.init(module);
 
 const EscapeHelper = require('areto/helper/EscapeHelper');
-const NotFound = require('areto/error/NotFoundHttpException');
+const NotFound = require('areto/error/http/NotFound');
 const MetaSelectHelper = require('../component/MetaSelectHelper');

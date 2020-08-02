@@ -1,5 +1,5 @@
-# Evado Base API
+# Evado Framework Base API
 
 ### Data access app programming interface module
 
-[Evado Platform](https://github.com/mkhorin/evado)
+[Evado Framework](https://github.com/mkhorin/evado)

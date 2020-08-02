@@ -12,17 +12,21 @@ module.exports = class BaseController extends Base {
         this.baseMeta = this.module.getBaseMeta();
     }
 
-    getModelQuery (id) {
-        return this.meta.view.findById(id, this.getSpawnConfig()).withReadData();
-    }
-
-    async getModel (id) {
-        const model = await this.getModelQuery(id).one();
+    async getModel (id, handler) {
+        const query = this.getModelQuery(id);
+        if (handler) {
+            handler(query);
+        }
+        const model = await query.one();
         if (!model) {
             throw new NotFound('Object not found', `${id}.${this.meta.view.id}`);
         }
         this.meta.model = model;
         return model;
+    }
+
+    getModelQuery (id) {
+        return this.meta.view.findById(id, this.getSpawnConfig());
     }
 
     getMetaClass (name) {
@@ -63,5 +67,5 @@ module.exports = class BaseController extends Base {
     }
 };
 
-const BadRequest = require('areto/error/BadRequestHttpException');
-const NotFound = require('areto/error/NotFoundHttpException');
+const BadRequest = require('areto/error/http/BadRequest');
+const NotFound = require('areto/error/http/NotFound');
