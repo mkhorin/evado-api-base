@@ -50,11 +50,14 @@ module.exports = class DataController extends Base {
     async actionListRelated () {
         const request = this.getPostParams();
         this.setMetaParams(request, 'list');
-        await this.setMasterParams(request.master);
+        const master = await this.setMasterMetaParams(request.master);
+        if (!master.model) {
+            throw new BadRequest('Invalid master object');
+        }
         await this.security.resolveOnList(this.meta.view);
         const query = this.meta.view.find(this.getSpawnConfig()).withListData().withTitle();
         query.setRelatedFilter(this.assignSecurityModelFilter.bind(this));
-        await this.master.attr.relation.setQueryByModel(query, this.master.model);
+        await master.attr.relation.setQueryByModel(query, master.model);
         const list = this.spawn('component/MetaList', {controller: this, query});
         const items = await list.getList();
         this.sendJson(items);
@@ -70,46 +73,50 @@ module.exports = class DataController extends Base {
     }
 
     async actionRead () {
-        const params = this.getPostParams();
-        this.setMetaParams(params, 'edit');
-        const model = await this.getModel(params.id, query => query.withReadData());
+        const request = this.getPostParams();
+        this.setMetaParams(request, 'edit');
+        const model = await this.getModel(request.id, query => query.withReadData());
         await this.security.resolveOnRead(model);
         this.sendJson(model.output(this.security));
     }
 
     async actionDefaults () {
-        const params = this.getPostParams();
-        const {view} = this.setMetaParams(params, 'create'); // read defaults to create
-        await this.security.resolveOnCreate(view);
+        const request = this.getPostParams();
+        const {view} = this.setMetaParams(request, 'create'); // read defaults to create
+        await this.setMasterMetaParams(request.master);
         const model = view.createModel(this.getSpawnConfig());
         await model.setDefaultValues();
+        this.setDefaultMasterValue(model);
         await model.related.resolveEagers();
         await model.related.resolveEmbeddedModels();
         await model.resolveCalcValues();
+        await this.security.resolveOnCreate(model);
         this.sendJson(model.output(this.security));
     }
 
     async actionCreate () {
-        const params = this.getPostParams();
-        const {view} = this.setMetaParams(params, 'create');
+        const request = this.getPostParams();
+        const {view} = this.setMetaParams(request, 'create');
         if (this.meta.class.isAbstract()) {
             throw new BadRequest('Unable to instantiate abstract class');
         }
         this.checkCsrfToken();
-        await this.security.resolveOnCreate(view);
+        await this.setMasterMetaParams(request.master);
         const model = view.createModel(this.getSpawnConfig());
         await model.setDefaultValues();
-        await this.save(params, model, 'create');
+        this.setDefaultMasterValue(model);
+        await this.security.resolveOnCreate(model);
+        await this.save(request, model, 'create');
     }
 
     async actionUpdate () {
-        const params = this.getPostParams();
-        this.setMetaParams(params, 'edit');
-        let model = await this.getModel(params.id);
+        const request = this.getPostParams();
+        this.setMetaParams(request, 'edit');
+        let model = await this.getModel(request.id);
         await this.security.resolveOnUpdate(model);
         const forbidden = !this.security.access.canUpdate();
         if (forbidden && this.meta.view.forbiddenView) {
-            model = await this.getForbiddenViewModel(params.id);
+            model = await this.getForbiddenViewModel(request.id);
         } else if (forbidden) {
             throw new Forbidden;
         }
@@ -121,14 +128,14 @@ module.exports = class DataController extends Base {
             throw new Locked('Read-only state');
         }
         this.checkCsrfToken();
-        await this.save(params, model, 'update');
+        await this.save(request, model, 'update');
     }
 
     async actionDelete () {
         this.checkCsrfToken();
-        const params = this.getPostParams();
-        this.setMetaParams(params);
-        const model = await this.getModel(params.id);
+        const request = this.getPostParams();
+        this.setMetaParams(request);
+        const model = await this.getModel(request.id);
         await this.security.resolveOnDelete(model);
         await model.delete();
         this.sendText(model.getId());
@@ -136,13 +143,13 @@ module.exports = class DataController extends Base {
 
     async actionDeleteMultiple () {
         this.checkCsrfToken();
-        const params = this.getPostParams();
-        this.setMetaParams(params);
-        if (!Array.isArray(params.ids)) {
+        const request = this.getPostParams();
+        this.setMetaParams(request);
+        if (!Array.isArray(request.ids)) {
             throw new BadRequest('Invalid ID array');
         }
         const result = [];
-        for (const id of params.ids) {
+        for (const id of request.ids) {
             try {
                 const model = await this.getModel(id);
                 await this.security.resolveOnDelete(model);
@@ -156,18 +163,18 @@ module.exports = class DataController extends Base {
     }
 
     async actionTransit () {
-        const params = this.getPostParams();
-        const {transition} = params;
+        const request = this.getPostParams();
+        const {transition} = request;
         if (!transition) {
             throw new BadRequest('No transition name specified');
         }
         this.checkCsrfToken();
-        this.setMetaParams(params);
-        let model = await this.getModel(params.id);
+        this.setMetaParams(request);
+        let model = await this.getModel(request.id);
         await this.security.resolveOnUpdate(model);
         const forbidden = !this.security.access.canUpdate();
         if (forbidden && this.meta.view.forbiddenView) {
-           model = await this.getForbiddenViewModel(params.id);
+           model = await this.getForbiddenViewModel(request.id);
         } else if (forbidden) {
             throw new Forbidden;
         }
@@ -223,12 +230,11 @@ module.exports = class DataController extends Base {
         return this.meta;
     }
 
-    async setMasterParams (data) {
+    async setMasterMetaParams (data) {
+        const master = this.meta.master;
         if (!data) {
-            throw new BadRequest('Master data not found');
+            return master;
         }
-        const master = {};
-        this.master = master;
         master.class = this.baseMeta.getClass(data.class);
         if (!master.class) {
             throw new BadRequest(`Master class not found: ${data.class}`);
@@ -257,6 +263,15 @@ module.exports = class DataController extends Base {
             throw new BadRequest(`Master object not found: ${data.id}.${master.view.id}`);
         }
         return master;
+    }
+
+    setDefaultMasterValue (model) {
+        const master = this.meta.master;
+        const attr = master.attr && master.attr.relation.refAttr;
+        if (attr && attr.relation && !model.get(attr)) {
+            model.set(attr, master.model.get(attr.relation.refAttrName));
+            master.refAttr = attr;
+        }
     }
 
     async save ({data}, model, action) {

@@ -29,6 +29,10 @@ module.exports = class ExtraMeta extends Base {
         return Object.prototype.hasOwnProperty.call(this._data, id) ? this._data[id] : null;
     }
 
+    getAttrData ({id}) {
+        return Object.prototype.hasOwnProperty.call(this._attrData, id) ? this._attrData[id] : null;
+    }
+
     getPageTitle ({node, view}) {
         return node.data.label || (view && view.data.label) || node.title;
     }
@@ -39,6 +43,7 @@ module.exports = class ExtraMeta extends Base {
 
     prepareMeta (meta) {
         try {
+            this._attrData = {};
             this._data = {};
             meta.classes.forEach(this.prepareClass, this);
         } catch (err) {
@@ -46,10 +51,11 @@ module.exports = class ExtraMeta extends Base {
         }
     }
 
-    prepareClass (item) {
-        const data = this.getClassData(item);
-        this._data[item.id] = data;
-        item.views.forEach(view => this.prepareView(view, data));
+    prepareClass (metaClass) {
+        const data = this.getClassData(metaClass);
+        this._data[metaClass.id] = data;
+        metaClass.attrs.forEach(this.prepareAttr, this);
+        metaClass.views.forEach(view => this.prepareView(view, data));
     }
 
     getClassData (item) {
@@ -62,6 +68,7 @@ module.exports = class ExtraMeta extends Base {
         const data = this.getViewData(view);
         data.filterColumns = classData.filterColumns;
         this._data[view.id] = data;
+        view.attrs.forEach(this.prepareAttr, this);
     }
 
     getViewData (view) {
@@ -176,12 +183,22 @@ module.exports = class ExtraMeta extends Base {
         return format;
     }
 
-    prepareClassAttr (item) {
-        this._data[item.id] = this.getClassAttrData(item);
+    prepareAttr (attr) {
+        this._attrData[attr.id] = {
+            actions: this.createAttrCommandActions(attr)
+        };
     }
 
-    getClassAttrData () {
-        return {};
+    createAttrCommandActions (attr) {
+        const actions = [];
+        for (const command of Object.keys(attr.commandMap)) {
+            switch (command) {
+                case 'create': actions.push(Rbac.CREATE); break;
+                case 'delete': actions.push(Rbac.DELETE); break;
+                case 'edit': actions.push(Rbac.READ); break;
+            }
+        }
+        return actions.length ? actions : null;
     }
 
     getModelData (model) {
@@ -195,7 +212,7 @@ module.exports = class ExtraMeta extends Base {
         }
         const model = view.createModel({module: this.module});
         const fileBehavior = model.createBehavior(config);
-        const param = `c=${view.class.name}&v=${view === view.class ? '' : view.name}`;
+        const param = `c=${view.class.name}${view === view.class ? '' : `&v=${view.name}`}`;
         const download = `${this.downloadUrl}?${param}`;
         const enabled = fileBehavior.getStorage().isThumbnailEnabled();
         const thumbnail = enabled ? `${this.thumbnailUrl}?${param}` : download;
@@ -260,4 +277,5 @@ module.exports = class ExtraMeta extends Base {
 
 const ArrayHelper = require('areto/helper/ArrayHelper');
 const IndexHelper = require('areto/helper/IndexHelper');
+const Rbac = require('evado/component/security/rbac/Rbac');
 const SearchFilterHelper = require('./SearchFilterHelper');

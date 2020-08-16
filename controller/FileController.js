@@ -16,13 +16,15 @@ module.exports = class FileController extends Base {
     }
 
     async actionUpload () {
+        if (!await this.user.can('moduleApiBaseUpload')) {
+            throw new Forbidden;
+        }
         this.setMetaParams();
-        await this.security.resolveOnCreate(this.meta.view);
         const model = this.meta.view.createModel(this.getSpawnConfig());
         const fileBehavior = this.createFileBehavior(model);
         const raw = this.spawn(fileBehavior.getRawFile(), {fileBehavior});
         if (await raw.isLimitReached(this.user)) {
-            return this.sendText(this.translate('Upload limit reached'), 400);
+            return this.sendText(this.translate('Upload limit reached'), 409);
         }
         if (!await raw.upload(this.req, this.res)) {
             return this.sendText(this.translate(raw.getFirstError()), 400);
@@ -92,4 +94,5 @@ module.exports.init(module);
 
 const BadRequest = require('areto/error/http/BadRequest');
 const NotFound = require('areto/error/http/NotFound');
+const Forbidden = require('areto/error/http/Forbidden');
 const FileHelper = require('areto/helper/FileHelper');
