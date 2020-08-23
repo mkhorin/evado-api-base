@@ -31,7 +31,6 @@ module.exports = class DataController extends Base {
         this.setMetaParams(this.getPostParams(), 'list');
         await this.security.resolveOnList(this.meta.view);
         const query = this.meta.view.find(this.getSpawnConfig());
-        query.setRelatedFilter(this.assignSecurityModelFilter.bind(this));
         const list = this.spawn('component/MetaList', {controller: this, query});
         const counter = await list.count();
         this.sendText(counter);
@@ -40,6 +39,7 @@ module.exports = class DataController extends Base {
     async actionList () {
         this.setMetaParams(this.getPostParams(), 'list');
         await this.security.resolveOnList(this.meta.view);
+        await this.security.resolveAttrsOnList(this.meta.view);
         const query = this.meta.view.find(this.getSpawnConfig()).withListData().withTitle();
         query.setRelatedFilter(this.assignSecurityModelFilter.bind(this));
         const list = this.spawn('component/MetaList', {controller: this, query});
@@ -55,6 +55,7 @@ module.exports = class DataController extends Base {
             throw new BadRequest('Invalid master object');
         }
         await this.security.resolveOnList(this.meta.view);
+        await this.security.resolveAttrsOnList(this.meta.view);
         const query = this.meta.view.find(this.getSpawnConfig()).withListData().withTitle();
         query.setRelatedFilter(this.assignSecurityModelFilter.bind(this));
         await master.attr.relation.setQueryByModel(query, master.model);
@@ -77,6 +78,7 @@ module.exports = class DataController extends Base {
         this.setMetaParams(request, 'edit');
         const model = await this.getModel(request.id, query => query.withReadData());
         await this.security.resolveOnRead(model);
+        await this.security.resolveAttrsOnRead(model);
         this.sendJson(model.output(this.security));
     }
 
@@ -91,6 +93,7 @@ module.exports = class DataController extends Base {
         await model.related.resolveEmbeddedModels();
         await model.resolveCalcValues();
         await this.security.resolveOnCreate(model);
+        await this.security.resolveAttrsOnCreate(model);
         this.sendJson(model.output(this.security));
     }
 
@@ -106,6 +109,7 @@ module.exports = class DataController extends Base {
         await model.setDefaultValues();
         this.setDefaultMasterValue(model);
         await this.security.resolveOnCreate(model);
+        await this.security.resolveAttrsOnCreate(model);
         await this.save(request, model, 'create');
     }
 
@@ -205,9 +209,11 @@ module.exports = class DataController extends Base {
 
     async assignSecurityModelFilter (query) {
         query.security = this.createMetaSecurity();
-        return await query.security.resolveOnList(query.view, {skipAccessException: true})
-            ? query.security.access.assignObjectFilter(query)
-            : query.where(['FALSE']);
+        if (await query.security.resolveOnList(query.view, {skipAccessException: true})) {
+            await query.security.resolveAttrsOnList(query.view);
+            return query.security.access.assignObjectFilter(query);
+        }
+        return query.where(['FALSE']);
     }
 
     createMetaSecurity () {

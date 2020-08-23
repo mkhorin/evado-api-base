@@ -172,7 +172,7 @@ module.exports = class ExtraMeta extends Base {
             format = {name: format};
         }
         if (!format) {
-            format = {name: attr.isThumbnail() ? 'thumbnail' : 'link'};
+            format = {name: attr.isThumbnail() ? 'thumbnail' : attr.isStringView() ? 'string' :  'link'};
         }
         if (!format.url && attr.commandMap.edit) {
             format.url = this.urlManager.resolve(['model/update', {
@@ -195,7 +195,6 @@ module.exports = class ExtraMeta extends Base {
             switch (command) {
                 case 'create': actions.push(Rbac.CREATE); break;
                 case 'delete': actions.push(Rbac.DELETE); break;
-                case 'edit': actions.push(Rbac.READ); break;
             }
         }
         return actions.length ? actions : null;
