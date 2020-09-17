@@ -124,6 +124,7 @@ module.exports = class ExtraMeta extends Base {
         const data = {
             name: attr.name,
             label: attr.title,
+            hint: attr.extHint || attr.hint,
             type: attr.getType(),
             titleName: `${attr.name}_title`,
             searchable: attr.data.commonSearchable,

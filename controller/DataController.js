@@ -30,7 +30,7 @@ module.exports = class DataController extends Base {
     async actionCount () {
         this.setMetaParams(this.getPostParams(), 'list');
         await this.security.resolveOnList(this.meta.view);
-        const query = this.meta.view.find(this.getSpawnConfig());
+        const query = this.meta.view.createQuery(this.getSpawnConfig());
         const list = this.spawn('component/MetaList', {controller: this, query});
         const counter = await list.count();
         this.sendText(counter);
@@ -40,7 +40,7 @@ module.exports = class DataController extends Base {
         this.setMetaParams(this.getPostParams(), 'list');
         await this.security.resolveOnList(this.meta.view);
         await this.security.resolveAttrsOnList(this.meta.view);
-        const query = this.meta.view.find(this.getSpawnConfig()).withListData().withTitle();
+        const query = this.meta.view.createQuery(this.getSpawnConfig()).withListData().withTitle();
         query.setRelatedFilter(this.assignSecurityModelFilter.bind(this));
         const list = this.spawn('component/MetaList', {controller: this, query});
         const items = await list.getList();
@@ -56,7 +56,7 @@ module.exports = class DataController extends Base {
         }
         await this.security.resolveOnList(this.meta.view);
         await this.security.resolveAttrsOnList(this.meta.view);
-        const query = this.meta.view.find(this.getSpawnConfig()).withListData().withTitle();
+        const query = this.meta.view.createQuery(this.getSpawnConfig()).withListData().withTitle();
         query.setRelatedFilter(this.assignSecurityModelFilter.bind(this));
         await master.attr.relation.setQueryByModel(query, master.model);
         const list = this.spawn('component/MetaList', {controller: this, query});
@@ -67,7 +67,7 @@ module.exports = class DataController extends Base {
     async actionListSelect () {
         this.setMetaParams(this.getPostParams(), 'list');
         await this.security.resolveOnList(this.meta.view);
-        const query = this.meta.view.find(this.getSpawnConfig()).withTitle();
+        const query = this.meta.view.createQuery(this.getSpawnConfig()).withTitle();
         const list = this.spawn('meta/MetaSelect2', {controller: this, query});
         const items = await list.getList();
         this.sendJson(items);
@@ -76,10 +76,12 @@ module.exports = class DataController extends Base {
     async actionRead () {
         const request = this.getPostParams();
         this.setMetaParams(request, 'edit');
-        const model = await this.getModel(request.id, query => query.withReadData());
-        await this.security.resolveOnRead(model);
-        await this.security.resolveAttrsOnRead(model);
-        this.sendJson(model.output(this.security));
+        const query = this.getModelQuery(request.id).withReadData();
+        const model = await this.getModelByQuery(query);
+        const security = this.security;
+        await security.resolveOnRead(model);
+        await security.resolveAttrsOnRead(model);
+        this.sendJson(model.output({security}));
     }
 
     async actionDefaults () {
@@ -92,9 +94,10 @@ module.exports = class DataController extends Base {
         await model.related.resolveEagers();
         await model.related.resolveEmbeddedModels();
         await model.resolveCalcValues();
-        await this.security.resolveOnCreate(model);
-        await this.security.resolveAttrsOnCreate(model);
-        this.sendJson(model.output(this.security));
+        const security = this.security;
+        await security.resolveOnCreate(model);
+        await security.resolveAttrsOnCreate(model);
+        this.sendJson(model.output({security}));
     }
 
     async actionCreate () {
@@ -176,17 +179,13 @@ module.exports = class DataController extends Base {
         this.setMetaParams(request);
         let model = await this.getModel(request.id);
         await this.security.resolveOnUpdate(model);
-        const forbidden = !this.security.access.canUpdate();
-        if (forbidden && this.meta.view.forbiddenView) {
-           model = await this.getForbiddenViewModel(request.id);
-        } else if (forbidden) {
-            throw new Forbidden;
-        }
-        if (model.isTransiting()) {
-            throw new Locked('Transition in progress...');
+        let forbiddenUpdate = !this.security.access.canUpdate();
+        if (forbiddenUpdate && this.meta.view.forbiddenView) {
+            forbiddenUpdate = false;
+            model = await this.getForbiddenViewModel(request.id);
         }
         const transit = this.createMetaTransit();
-        await transit.execute(model, transition);
+        await transit.execute(model, transition, forbiddenUpdate);
         await model.hasError()
             ? this.handleModelError(model)
             : this.sendText(model.getId());
@@ -264,7 +263,7 @@ module.exports = class DataController extends Base {
             master.model = master.view.createModel(this.getSpawnConfig());
             return master;
         }
-        master.model = await master.view.findById(data.id, this.getSpawnConfig()).one();
+        master.model = await master.view.createQuery(this.getSpawnConfig()).byId(data.id).one();
         if (!master.model) {
             throw new BadRequest(`Master object not found: ${data.id}.${master.view.id}`);
         }

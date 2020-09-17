@@ -12,21 +12,21 @@ module.exports = class BaseController extends Base {
         this.baseMeta = this.module.getBaseMeta();
     }
 
-    async getModel (id, handler) {
-        const query = this.getModelQuery(id);
-        if (handler) {
-            handler(query);
-        }
+    getModel (id) {
+        return this.getModelByQuery(this.getModelQuery(id));
+    }
+
+    async getModelByQuery (query) {
         const model = await query.one();
         if (!model) {
-            throw new NotFound('Object not found', `${id}.${this.meta.view.id}`);
+            throw new NotFound('Object not found');
         }
         this.meta.model = model;
         return model;
     }
 
     getModelQuery (id) {
-        return this.meta.view.findById(id, this.getSpawnConfig());
+        return this.meta.view.createQuery(this.getSpawnConfig()).byId(id);
     }
 
     getMetaClass (name) {

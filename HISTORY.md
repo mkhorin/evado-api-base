@@ -1,3 +1,8 @@
+## 1.8.0
+
+* controller/DataController
+    - fix query creation
+    
 ## 1.7.0
 
 * controller/DataController
