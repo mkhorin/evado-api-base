@@ -16,34 +16,34 @@ module.exports = class MetaController extends Base {
     }
 
     actionClass () {
-        const metaClass = this.getClassFromRequest();
-        this.sendJson(metaClass.data);
+        this.sendJson(this.getClassFromRequest().data);
     }
 
     actionView () {
-        const metaClass = this.getClassFromRequest();
-        const metaView = metaClass.getView(this.getPostParam('view'));
-        if (!metaView) {
+        const cls = this.getClassFromRequest();
+        const view = cls.getView(this.getPostParam('view'));
+        if (!view) {
             throw new NotFound('View not found');
         }
-        this.sendJson(metaView.data);
+        this.sendJson(view.data);
     }
 
     actionListClassSelect () {
-        const items = this.filterBySearch(this.baseMeta.classes);
-        this.sendJson(MetaSelectHelper.getLabelMap(items));
+        const ancestor = this.baseMeta.getClass(this.getPostParam('ancestor'));
+        const classes = ancestor ? ancestor.getActiveDescendants() : this.baseMeta.classes;
+        this.sendJson(MetaSelectHelper.getLabelMap(this.filterBySearch(classes)));
     }
 
     actionListViewSelect () {
-        const metaClass = this.getClassFromRequest();
-        const items = this.filterBySearch(metaClass.views);
+        const cls = this.getClassFromRequest();
+        const items = this.filterBySearch(cls.views);
         this.sendJson(MetaSelectHelper.getLabelMap(items));
     }
 
     actionListAttrSelect () {
-        const metaClass = this.getClassFromRequest();
-        const metaView = metaClass.getView(this.getPostParam('view')) || metaClass;
-        const items = this.filterBySearch(metaView.attrs);
+        const cls = this.getClassFromRequest();
+        const view = cls.getView(this.getPostParam('view')) || cls;
+        const items = this.filterBySearch(view.attrs);
         this.sendJson(MetaSelectHelper.getLabelMap(items));
     }
 
@@ -60,9 +60,9 @@ module.exports = class MetaController extends Base {
     }
 
     getClassFromRequest () {
-        const metaClass = this.baseMeta.getClass(this.getPostParam('class'));
-        if (metaClass) {
-            return metaClass;
+        const cls = this.baseMeta.getClass(this.getPostParam('class'));
+        if (cls) {
+            return cls;
         }
         throw new NotFound('Class not found');
     }
