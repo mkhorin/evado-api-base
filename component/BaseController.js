@@ -29,31 +29,31 @@ module.exports = class BaseController extends Base {
         return this.meta.view.createQuery(this.getSpawnConfig()).byId(id);
     }
 
-    getMetaClass (name) {
-        const metaClass = this.baseMeta.getClass(name);
-        if (!metaClass) {
+    getMetadataClass (name) {
+        const cls = this.baseMeta.getClass(name);
+        if (!cls) {
             throw new BadRequest(`Class not found: ${name}`);
         }
-        return metaClass
+        return cls;
     }
 
-    getMetaView (name, metaClass, defaults) {
+    getMetadataView (name, cls, defaults) {
         if (!name) {
-            return (defaults && metaClass.getView(defaults)) || metaClass;
+            return (defaults && cls.getView(defaults)) || cls;
         }
-        const view = metaClass.getView(name);
+        const view = cls.getView(name);
         if (!view) {
-            throw new BadRequest(`View not found: ${name}.${metaClass.id}`);
+            throw new BadRequest(`View not found: ${name}.${cls.id}`);
         }
         return view;
     }
 
     setClassMetaParams (name) {
-        this.meta.class = this.getMetaClass(name);
+        this.meta.class = this.getMetadataClass(name);
     }
 
     setViewMetaParams (name, defaultName) {
-        this.meta.view = this.getMetaView(name, this.meta.class, defaultName);
+        this.meta.view = this.getMetadataView(name, this.meta.class, defaultName);
     }
 
     setAttrMetaParams (param = this.getQueryParam('a')) {

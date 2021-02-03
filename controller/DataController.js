@@ -272,8 +272,8 @@ module.exports = class DataController extends Base {
 
     setDefaultMasterValue (model) {
         const master = this.meta.master;
-        const attr = master.attr && master.attr.relation.refAttr;
-        if (attr && attr.relation && !model.has(attr)) {
+        const attr = master.attr?.relation.refAttr;
+        if (attr?.relation && !model.has(attr)) {
             model.set(attr, master.model.get(attr.relation.refAttrName));
             master.refAttr = attr;
         }

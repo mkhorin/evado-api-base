@@ -26,19 +26,19 @@ module.exports = class ExtraMeta extends Base {
     }
 
     getData ({id}) {
-        return Object.prototype.hasOwnProperty.call(this._data, id) ? this._data[id] : null;
+        return ObjectHelper.getValue(id, this._data);
     }
 
     getAttrData ({id}) {
-        return Object.prototype.hasOwnProperty.call(this._attrData, id) ? this._attrData[id] : null;
+        return ObjectHelper.getValue(id, this._attrData);
     }
 
     getPageTitle ({node, view}) {
-        return node.data.label || (view && view.data.label) || node.title;
+        return node.data.label || view?.data.label || node.title;
     }
 
     getPageDescription ({node, view}) {
-        return node.data.description || (view && view.data.description);
+        return node.data.description || view?.data.description;
     }
 
     prepareMeta (meta) {
@@ -51,11 +51,11 @@ module.exports = class ExtraMeta extends Base {
         }
     }
 
-    prepareClass (metaClass) {
-        const data = this.getClassData(metaClass);
-        this._data[metaClass.id] = data;
-        metaClass.attrs.forEach(this.prepareAttr, this);
-        metaClass.views.forEach(view => this.prepareView(view, data));
+    prepareClass (cls) {
+        const data = this.getClassData(cls);
+        this._data[cls.id] = data;
+        cls.attrs.forEach(this.prepareAttr, this);
+        cls.views.forEach(view => this.prepareView(view, data));
     }
 
     getClassData (item) {
@@ -277,5 +277,6 @@ module.exports = class ExtraMeta extends Base {
 
 const ArrayHelper = require('areto/helper/ArrayHelper');
 const IndexHelper = require('areto/helper/IndexHelper');
+const ObjectHelper = require('areto/helper/ObjectHelper');
 const Rbac = require('evado/component/security/rbac/Rbac');
 const SearchFilterHelper = require('./SearchFilterHelper');

@@ -5,10 +5,7 @@
 
 const Base = require('evado/component/base/BaseModule');
 
-module.exports = class BaseApiModule extends Base {
-
-    getBaseName () {
-        return 'base';
-    }
+module.exports = class BaseApiModule extends Base {   
+    
 };
 module.exports.init(module);
