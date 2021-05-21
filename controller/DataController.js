@@ -86,9 +86,9 @@ module.exports = class DataController extends Base {
 
     async actionDefaults () {
         const request = this.getPostParams();
-        const {view} = this.setMetaParams(request, 'create'); // read defaults to create
+        const meta = this.setMetaParams(request, 'create'); // read defaults to create
         await this.setMasterMetaParams(request.master);
-        const model = view.createModel(this.getSpawnConfig());
+        const model = meta.view.createModel(this.getSpawnConfig());
         await model.setDefaultValues();
         this.setDefaultMasterValue(model);
         await model.related.resolveEagers();
@@ -101,14 +101,18 @@ module.exports = class DataController extends Base {
     }
 
     async actionCreate () {
+        const meta = this.meta;
         const request = this.getPostParams();
-        const {view} = this.setMetaParams(request, 'create');
-        if (this.meta.class.isAbstract()) {
+        this.setClassMetaParams(request.class);
+        meta.class = meta.class.getLastVersion();
+        this.setViewMetaParams(request.view, 'create');
+        meta.defaultViewAssigned = !request.view;
+        if (meta.class.isAbstract()) {
             throw new BadRequest('Unable to instantiate abstract class');
         }
         this.checkCsrfToken();
         await this.setMasterMetaParams(request.master);
-        const model = view.createModel(this.getSpawnConfig());
+        const model = meta.view.createModel(this.getSpawnConfig());
         await model.setDefaultValues();
         this.setDefaultMasterValue(model);
         await this.security.resolveOnCreate(model);
@@ -118,11 +122,11 @@ module.exports = class DataController extends Base {
 
     async actionUpdate () {
         const request = this.getPostParams();
-        this.setMetaParams(request, 'edit');
+        const meta = this.setMetaParams(request, 'edit');
         let model = await this.getModel(request.id);
         await this.security.resolveOnUpdate(model);
         const forbidden = !this.security.access.canUpdate();
-        if (forbidden && this.meta.view.forbiddenView) {
+        if (forbidden && meta.view.forbiddenView) {
             model = await this.getForbiddenViewModel(request.id);
         } else if (forbidden) {
             throw new Forbidden;
@@ -151,7 +155,7 @@ module.exports = class DataController extends Base {
     async actionDeleteMultiple () {
         this.checkCsrfToken();
         const request = this.getPostParams();
-        this.setMetaParams(request);
+        const meta = this.setMetaParams(request);
         if (!Array.isArray(request.ids)) {
             throw new BadRequest('Invalid ID array');
         }
@@ -163,7 +167,7 @@ module.exports = class DataController extends Base {
                 await model.delete();
                 result.push(id);
             } catch (err) {
-                this.log('error', `Deletion failed: ${id}.${this.meta.class.id}:`, err);
+                this.log('error', `Deletion failed: ${id}.${meta.class.id}:`, err);
             }
         }
         this.sendText(result.join());
@@ -176,11 +180,11 @@ module.exports = class DataController extends Base {
             throw new BadRequest('No transition name specified');
         }
         this.checkCsrfToken();
-        this.setMetaParams(request);
+        let meta = this.setMetaParams(request);
         let model = await this.getModel(request.id);
         await this.security.resolveOnUpdate(model);
         let forbiddenUpdate = !this.security.access.canUpdate();
-        if (forbiddenUpdate && this.meta.view.forbiddenView) {
+        if (forbiddenUpdate && meta.view.forbiddenView) {
             forbiddenUpdate = false;
             model = await this.getForbiddenViewModel(request.id);
         }

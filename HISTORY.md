@@ -1,3 +1,8 @@
+## 2.1.0
+
+* controller/DataController
+    - add class versions
+
 ## 2.0.0
 
 * component/security/Auth
