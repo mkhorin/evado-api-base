@@ -9,9 +9,25 @@ module.exports = class ExtraMeta extends Base {
 
     constructor (config) {
         super({
-            downloadUrl: 'api/base/file/download',
-            thumbnailUrl: 'api/base/file/thumbnail',
-            uploadUrl: 'api/base/file/upload',
+            file: {
+                download: 'api/base/file/download',
+                thumbnail: 'api/base/file/thumbnail',
+                upload: 'api/base/file/upload',
+                delete: 'api/base/file/delete',
+                attrHandler: 'File'
+            },
+            s3: {
+                download: 'api/base/s3/download',
+                upload: 'api/base/s3/upload',
+                delete: 'api/base/s3/delete',
+                attrHandler: 'S3',
+                preload: true,
+                uploadMethod: 'PUT'
+            },
+            signature: {
+                dataUrl: 'api/base/signature/data',
+                signUrl: 'api/base/signature/create',
+            },
             ...config
         });
     }
@@ -78,7 +94,8 @@ module.exports = class ExtraMeta extends Base {
             columnMap: IndexHelper.indexObjects(columns, 'name'),
             modalSortNames: this.getModalSortNames(view),
             file: this.getFileAttrData(view),
-            commands: this.getViewCommands(view)
+            commands: this.getViewCommands(view),
+            signature: this.getSignatureData(view)
         };
     }
 
@@ -90,11 +107,21 @@ module.exports = class ExtraMeta extends Base {
         }, view.options.commands);
     }
 
+    getSignatureData (view) {
+        const config = view.behaviors.getByClass(SignatureBehavior);
+        if (config) {
+            return {
+                dataUrl: this.signature.dataUrl,
+                signUrl: this.signature.signUrl,
+                ...config.options
+            };
+        }
+    }
+
     getModalSortNames (view) {
+        const configs = view.behaviors.getAllByClass(SortOrderBehavior);
+        const names = ArrayHelper.getPropertyValues('attrName', configs);
         const result = [];
-        const Behavior = require('evado-meta-base/behavior/SortOrderBehavior');
-        const behaviors = view.getBehaviorsByClass(Behavior);
-        const names = ArrayHelper.getPropertyValues('attrName', behaviors);
         for (const attr of view.attrs) {
             if (attr.isSortable() && !attr.isReadOnly() && names.includes(attr.name)) {
                 result.push(attr.name);
@@ -206,46 +233,58 @@ module.exports = class ExtraMeta extends Base {
         return this.getData(model.view) || this.getData(model.class);
     }
 
+    // FILE
+
     getFileAttrData (view) {
-        const config = view.class.FileBehaviorConfig;
+        const config = view.class.behaviors.fileItem;
         if (!config) {
             return null;
         }
-        const model = view.createModel({module: this.module});
-        const fileBehavior = model.createBehavior(config);
-        const param = `c=${view.class.name}${view === view.class ? '' : `&v=${view.name}`}`;
-        const download = `${this.downloadUrl}?${param}`;
-        const enabled = fileBehavior.getStorage().isThumbnailEnabled();
-        const thumbnail = enabled ? `${this.thumbnailUrl}?${param}` : download;
-        return {
+        const data = {
             imageOnly: config.imageOnly,
             maxSize: config.maxSize,
             minSize: config.minSize,
             extensions: config.extensions,
-            mimeTypes: config.mimeTypes,
+            types: config.types,
             accept: config.accept,
-            nameAttr: config.nameAttr,
-            delete: `file/delete`,
-            upload: `${this.uploadUrl}?${param}`,
-            download,
-            thumbnail
+            nameAttr: config.nameAttr?.name,
+            ...this.getFileOptions(config.Class)
         };
+        const params = `c=${view.class.name}${view === view.class ? '' : `&v=${view.name}`}`;
+        data.download = data.download ? `${data.download}?${params}` : null;
+        data.upload = data.upload ? `${data.upload}?${params}` : null;
+        data.delete = data.delete ? `${data.delete}?${params}` : null;
+        data.thumbnail = this.isStorageThumbnails(view)
+            ? `${data.thumbnail}?${params}`
+            : data.thumbnail ? data.download : null;
+        return data;
+    }
+
+    getFileOptions (Class) {
+        return Class === S3Behavior || Class.prototype instanceof S3Behavior ? this.s3 : this.file;
+    }
+
+    isStorageThumbnails (view) {
+        return view.createModel({module: this.module}).createFileBehavior()?.isThumbnails();
     }
 
     getModelFileData (model, thumbnailSize) {
         const id = model.getId();
-        const config = model.class.FileBehaviorConfig;
-        if (!id || !config) {
+        if (!id) {
+            return null;
+        }
+        const behavior = model.createFileBehavior();
+        if (!behavior) {
             return null;
         }
         const data = this.getModelData(model).file;
         const result = {
             id,
-            name: model.get(config.Class.NAME_ATTR) || id,
+            name: behavior.getName() || id,
             download: data.download + '&id=' + id,
-            size: config.Class.getSize(model)
+            size: behavior.getSize()
         };
-        if (data.thumbnail && config.Class.isImage(model)) {
+        if (data.thumbnail && behavior.isImage()) {
             result.thumbnail = data.thumbnail + '&id=' + id;
             if (thumbnailSize) {
                 result.thumbnail += '&s=' + thumbnailSize;
@@ -257,12 +296,12 @@ module.exports = class ExtraMeta extends Base {
     getRelationThumbnailData (attr, value) {
         if (!value) {
             return value;
-        }
-        const data = this.getData(attr.relation.refClass).file;
-        const config = attr.relation.refClass.FileBehaviorConfig;
+        }        
+        const config = attr.relation.refClass.behaviors.fileItem;
         if (!config) {
             return value;
         }
+        const data = this.getData(attr.relation.refClass).file;
         value = value.toString();
         const result = {
             id: value,
@@ -281,3 +320,6 @@ const IndexHelper = require('areto/helper/IndexHelper');
 const ObjectHelper = require('areto/helper/ObjectHelper');
 const Rbac = require('evado/component/security/rbac/Rbac');
 const SearchFilterHelper = require('./SearchFilterHelper');
+const S3Behavior = require('evado-meta-base/behavior/S3Behavior');
+const SignatureBehavior = require('evado-meta-base/behavior/SignatureBehavior');
+const SortOrderBehavior = require('evado-meta-base/behavior/SortOrderBehavior');

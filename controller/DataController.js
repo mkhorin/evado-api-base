@@ -106,7 +106,7 @@ module.exports = class DataController extends Base {
         this.setClassMetaParams(request.class);
         meta.class = meta.class.getLastVersion();
         this.setViewMetaParams(request.view, 'create');
-        meta.defaultViewAssigned = !request.view;
+        this.defaultViewAssigned = !request.view;
         if (meta.class.isAbstract()) {
             throw new BadRequest('Unable to instantiate abstract class');
         }
@@ -197,13 +197,13 @@ module.exports = class DataController extends Base {
 
     getForbiddenViewModel (id) {
         this.meta.view = this.meta.view.forbiddenView;
-        this.meta.defaultViewAssigned = true;
+        this.defaultViewAssigned = true;
         return this.getModel(id);
     }
 
     getModelQuery () {
         const query = super.getModelQuery(...arguments);
-        if (this.meta.defaultViewAssigned) {
+        if (this.defaultViewAssigned) {
             query.withStateView();
         }
         query.setRelatedFilter(this.assignSecurityModelFilter.bind(this));
@@ -219,12 +219,6 @@ module.exports = class DataController extends Base {
         return query.where(['FALSE']);
     }
 
-    createMetaSecurity () {
-        return this.spawn('meta/MetaSecurity', {
-            controller: this
-        });
-    }
-
     createMetaTransit () {
         return this.spawn('meta/MetaTransit', {
             controller: this,
@@ -235,7 +229,7 @@ module.exports = class DataController extends Base {
     setMetaParams (data, defaultView) {
         this.setClassMetaParams(data.class);
         this.setViewMetaParams(data.view, defaultView);
-        this.meta.defaultViewAssigned = !data.view;
+        this.defaultViewAssigned = !data.view;
         return this.meta;
     }
 

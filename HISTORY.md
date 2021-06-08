@@ -1,3 +1,12 @@
+## 3.0.0
+
+* controller/FileController
+    - fix behaviors
+* controller/S3Controller
+    - add S3 storage controller 
+* controller/SignatureController
+    - add digital signature controller
+
 ## 2.1.0
 
 * controller/DataController

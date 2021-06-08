@@ -9,29 +9,25 @@ module.exports = class FileController extends Base {
 
     constructor (config) {
         super(config);
-        this.security = this.spawn('meta/MetaSecurity', {controller: this});
+        this.security = this.createMetaSecurity();
         this.meta = this.spawn('meta/MetaParams');
         this.meta.security = this.security;
-        this.extraMeta = this.module.get('extraMeta');
     }
 
     async actionUpload () {
-        if (!await this.user.can('moduleApiBaseUpload')) {
-            throw new Forbidden;
-        }
+        await this.canUpload();
         this.setMetaParams();
         const model = this.meta.view.createModel(this.getSpawnConfig());
-        const fileBehavior = this.createFileBehavior(model);
-        const raw = this.spawn(fileBehavior.getRawFile(), {fileBehavior});
-        if (await raw.isLimitReached(this.user)) {
-            return this.sendText(this.translate('Upload limit reached'), 409);
-        }
+        const behavior = this.createFileBehavior(model);
+        const raw = this.spawn(behavior.getRawClass(), {
+            customRule: behavior.rule
+        });
         if (!await raw.upload(this.req, this.res)) {
             return this.sendText(this.translate(raw.getFirstError()), 400);
         }
         this.sendJson({
             id: raw.getId(),
-            mime: raw.getMime(),
+            type: raw.getMediaType(),
             size: raw.getSize()
         });
     }
@@ -40,15 +36,15 @@ module.exports = class FileController extends Base {
         this.setMetaParams();
         const model = await this.getModel(this.getQueryParam('id'));
         await this.security.resolveOnTitle(model);
-        const fileBehavior = this.createFileBehavior(model);
-        const storage = fileBehavior.getStorage();
-        const filename = fileBehavior.getFilename();
+        const behavior = this.createFileBehavior(model);
+        const storage = behavior.getStorage();
+        const filename = behavior.getFilename();
         const file = storage.getPath(filename);
         if (!await FileHelper.getStat(file)) {
             throw new NotFound(`File not found: ${filename}`);
         }
-        const name = fileBehavior.getName() || model.getId();
-        this.setHttpHeader(storage.getHeaders(name, fileBehavior.getMime()));
+        const name = behavior.getName() || model.getId();
+        this.setHttpHeader(storage.getHeaders(name, behavior.getMediaType()));
         this.sendFile(file);
     }
 
@@ -56,10 +52,10 @@ module.exports = class FileController extends Base {
         this.setMetaParams();
         const model = await this.getModel(this.getQueryParam('id'));
         await this.security.resolveOnTitle(model);
-        const fileBehavior = this.createFileBehavior(model);
-        const storage = fileBehavior.getStorage();
-        const name = fileBehavior.getName() || model.getId();
-        const filename = fileBehavior.getFilename();
+        const behavior = this.createFileBehavior(model);
+        const storage = behavior.getStorage();
+        const name = behavior.getName() || model.getId();
+        const filename = behavior.getFilename();
         const size = this.getQueryParam('s') || this.meta.view.options.thumbnail;
         if (size) {
             const file = await storage.ensureThumbnail(size, filename);
@@ -73,8 +69,24 @@ module.exports = class FileController extends Base {
         if (!await FileHelper.getStat(file)) {
             throw new NotFound(`File not found: ${filename}`);
         }
-        this.setHttpHeader(storage.getHeaders(name, fileBehavior.getMime()));
+        this.setHttpHeader(storage.getHeaders(name, behavior.getMediaType()));
         this.sendFile(file);
+    }
+
+    async actionDelete () {
+        await this.canUpload();
+        this.setMetaParams();
+        const model = this.meta.view.createModel(this.getSpawnConfig());
+        const behavior = this.createFileBehavior(model);
+        const raw = await this.spawn(behavior.getRawClass()).findById(this.getPostParam('id')).one();
+        if (!raw) {
+            return this.sendStatus(404);
+        }
+        if (raw.getOwner()) {
+            return this.sendStatus(400);
+        }
+        await raw.delete();
+        this.sendStatus(200);
     }
 
     setMetaParams () {
@@ -84,15 +96,15 @@ module.exports = class FileController extends Base {
     }
 
     createFileBehavior (model) {
-        if (!this.meta.class.FileBehaviorConfig) {
-            throw new BadRequest(`File behavior not found: ${this.meta.class.id}`);
+        const behavior = model.createFileBehavior();
+        if (behavior) {
+            return behavior;
         }
-        return model.createBehavior(this.meta.class.FileBehaviorConfig);
+        throw new BadRequest(`File behavior not found: ${model.view.id}`);
     }
 };
 module.exports.init(module);
 
 const BadRequest = require('areto/error/http/BadRequest');
 const NotFound = require('areto/error/http/NotFound');
-const Forbidden = require('areto/error/http/Forbidden');
 const FileHelper = require('areto/helper/FileHelper');

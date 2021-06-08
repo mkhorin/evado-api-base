@@ -12,6 +12,12 @@ module.exports = class BaseController extends Base {
         this.baseMeta = this.module.getBaseMeta();
     }
 
+    async canUpload () {
+        if (!await this.user.can('moduleApiBaseUpload')) {
+            throw new Forbidden;
+        }
+    }
+
     getModel (id) {
         return this.getModelByQuery(this.getModelQuery(id));
     }
@@ -65,7 +71,15 @@ module.exports = class BaseController extends Base {
             throw new BadRequest(`Attribute not found: ${attrName}.${this.meta.view.id}`);
         }
     }
+
+    createMetaSecurity (config) {
+        return this.spawn('meta/MetaSecurity', {
+            controller: this,
+            ...config
+        });
+    }
 };
 
 const BadRequest = require('areto/error/http/BadRequest');
+const Forbidden = require('areto/error/http/Forbidden');
 const NotFound = require('areto/error/http/NotFound');
