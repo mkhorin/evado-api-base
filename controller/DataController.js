@@ -11,6 +11,9 @@ module.exports = class DataController extends Base {
         return {
             ACTION_VIEW: require('evado/component/meta/MetaActionView'),
             ACTIONS: {
+                'sort': require('../component/action/SortAction'),
+                'sortRelated': require('../component/action/SortRelatedAction'),
+                'sortOwnRelated': require('../component/action/SortOwnRelatedAction'),
                 'utility': require('evado/component/utility/UtilityAction')
             },
             METHODS: {
