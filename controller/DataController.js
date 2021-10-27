@@ -84,7 +84,17 @@ module.exports = class DataController extends Base {
         const security = this.security;
         await security.resolveOnRead(model);
         await security.resolveAttrsOnRead(model);
-        this.sendJson(model.output({security}));
+        const result = model.output({security});
+        if (request.transitions) {
+            result._transitions = await this.getModelTransitions(model);
+        }
+        this.sendJson(result);
+    }
+
+    async getModelTransitions (model) {
+        const transit = this.createMetaTransit();
+        await transit.resolve(model);
+        return model.transitions.map(({name, title, hint, options}) => ({name, title, hint, options}));
     }
 
     async actionDefaults () {
@@ -192,7 +202,7 @@ module.exports = class DataController extends Base {
             model = await this.getForbiddenViewModel(request.id);
         }
         const transit = this.createMetaTransit();
-        await transit.execute(model, transition, forbiddenUpdate);
+        await transit.execute(model, transition);
         await model.hasError()
             ? this.handleModelError(model)
             : this.sendText(model.getId());
