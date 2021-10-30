@@ -1,3 +1,9 @@
+## 4.0.0
+
+* add sorting data actions
+* controller/DataController
+    - get available transitions when reading a model
+
 ## 3.0.0
 
 * controller/FileController

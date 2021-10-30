@@ -196,9 +196,8 @@ module.exports = class DataController extends Base {
         let meta = this.setMetaParams(request);
         let model = await this.getModel(request.id);
         await this.security.resolveOnUpdate(model);
-        let forbiddenUpdate = !this.security.access.canUpdate();
-        if (forbiddenUpdate && meta.view.forbiddenView) {
-            forbiddenUpdate = false;
+        const forbidden = !this.security.access.canUpdate();
+        if (forbidden && meta.view.forbiddenView) {
             model = await this.getForbiddenViewModel(request.id);
         }
         const transit = this.createMetaTransit();

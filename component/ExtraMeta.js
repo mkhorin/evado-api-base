@@ -133,18 +133,22 @@ module.exports = class ExtraMeta extends Base {
     getGridColumns (view) {
         const columns = [];
         if (!view.hasKeyAttr()) {
-            columns.push({
-                name: view.getKey(),
-                label: 'ID',
-                searchable: true,
-                sortable: true,
-                hidden: true
-            });
+            columns.push(this.getKeyGridColumn(view));
         }
         for (const attr of view.attrs) {
             columns.push(this.getGridColumn(attr));
         }
         return columns;
+    }
+
+    getKeyGridColumn (view) {
+        return {
+            name: view.getKey(),
+            label: 'ID',
+            searchable: true,
+            sortable: true,
+            hidden: true
+        };
     }
 
     getGridColumn (attr) {
@@ -201,7 +205,7 @@ module.exports = class ExtraMeta extends Base {
             format = {name: format};
         }
         if (!format) {
-            format = {name: attr.isThumbnail() ? 'thumbnail' : attr.isStringView() ? 'string' :  'link'};
+            format = {name: this.getRelationAttrFormatName(attr)};
         }
         if (!format.url && attr.commandMap.edit) {
             format.url = this.urlManager.resolve(['model/update', {
@@ -210,6 +214,10 @@ module.exports = class ExtraMeta extends Base {
             }]);
         }
         return format;
+    }
+
+    getRelationAttrFormatName (attr) {
+        return attr.isThumbnail() ? 'thumbnail' : attr.isStringView() ? 'string' :  'link';
     }
 
     prepareAttr (attr) {
@@ -224,6 +232,7 @@ module.exports = class ExtraMeta extends Base {
             switch (command) {
                 case 'create': actions.push(Rbac.CREATE); break;
                 case 'delete': actions.push(Rbac.DELETE); break;
+                case 'edit': actions.push(Rbac.UPDATE); break;
             }
         }
         return actions.length ? actions : null;
