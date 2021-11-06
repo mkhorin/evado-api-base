@@ -79,8 +79,7 @@ module.exports = class DataController extends Base {
     async actionRead () {
         const request = this.getPostParams();
         this.setMetaParams(request, 'edit');
-        const query = this.getModelQuery(request.id).withReadData();
-        const model = await this.getModelByQuery(query);
+        const model = await this.getReadModel(request.id);
         const security = this.security;
         await security.resolveOnRead(model);
         await security.resolveAttrsOnRead(model);
@@ -136,7 +135,7 @@ module.exports = class DataController extends Base {
     async actionUpdate () {
         const request = this.getPostParams();
         const meta = this.setMetaParams(request, 'edit');
-        let model = await this.getModel(request.id);
+        let model = await this.getReadModel(request.id);
         await this.security.resolveOnUpdate(model);
         const forbidden = !this.security.access.canUpdate();
         if (forbidden && meta.view.forbiddenView) {
@@ -159,7 +158,7 @@ module.exports = class DataController extends Base {
         this.checkCsrfToken();
         const request = this.getPostParams();
         this.setMetaParams(request);
-        const model = await this.getModel(request.id);
+        const model = await this.getReadModel(request.id);
         await this.security.resolveOnDelete(model);
         await model.delete();
         this.sendText(model.getId());
@@ -174,13 +173,8 @@ module.exports = class DataController extends Base {
         }
         const result = [];
         for (const id of request.ids) {
-            try {
-                const model = await this.getModel(id);
-                await this.security.resolveOnDelete(model);
-                await model.delete();
+            if (await this.deleteModelById(id)) {
                 result.push(id);
-            } catch (err) {
-                this.log('error', `Deletion failed: ${id}.${meta.class.id}:`, err);
             }
         }
         this.sendText(result.join());
@@ -194,7 +188,7 @@ module.exports = class DataController extends Base {
         }
         this.checkCsrfToken();
         let meta = this.setMetaParams(request);
-        let model = await this.getModel(request.id);
+        let model = await this.getReadModel(request.id);
         await this.security.resolveOnUpdate(model);
         const forbidden = !this.security.access.canUpdate();
         if (forbidden && meta.view.forbiddenView) {
@@ -205,6 +199,10 @@ module.exports = class DataController extends Base {
         await model.hasError()
             ? this.handleModelError(model)
             : this.sendText(model.getId());
+    }
+
+    getReadModel (id) {
+        return this.getModelByQuery(this.getModelQuery(id).withReadData());
     }
 
     getForbiddenViewModel (id) {
@@ -299,6 +297,17 @@ module.exports = class DataController extends Base {
 
     handleModelError (model) {
         this.send(this.translateMessageMap(model.getFirstErrorMap()), 400);
+    }
+
+    async deleteModelById (id) {
+        try {
+            const model = await this.getReadModel(id);
+            await this.security.resolveOnDelete(model);
+            await model.delete();
+            result.push(id);
+        } catch (err) {
+            this.log('error', `Deletion failed: ${id}.${meta.class.id}:`, err);
+        }
     }
 };
 module.exports.init(module);
