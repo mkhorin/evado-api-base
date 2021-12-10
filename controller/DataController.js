@@ -40,28 +40,21 @@ module.exports = class DataController extends Base {
     }
 
     async actionList () {
-        this.setMetaParams(this.getPostParams(), 'list');
-        await this.security.resolveOnList(this.meta.view);
-        await this.security.resolveAttrsOnList(this.meta.view);
-        const query = this.meta.view.createQuery(this.getSpawnConfig()).withListData().withTitle();
-        query.setRelatedFilter(this.assignSecurityModelFilter.bind(this));
-        const list = this.spawn('component/MetaList', {controller: this, query});
-        const items = await list.getList();
-        this.sendJson(items);
-    }
-
-    async actionListRelated () {
         const request = this.getPostParams();
         this.setMetaParams(request, 'list');
-        const master = await this.setMasterMetaParams(request.master);
-        if (!master.model) {
-            throw new BadRequest('Invalid master object');
+        if (request.master) {
+            await this.setMasterMetaParams(request.master);
+            if (!this.meta.master.model) {
+                throw new BadRequest('Invalid master object');
+            }
         }
         await this.security.resolveOnList(this.meta.view);
         await this.security.resolveAttrsOnList(this.meta.view);
         const query = this.meta.view.createQuery(this.getSpawnConfig()).withListData().withTitle();
         query.setRelatedFilter(this.assignSecurityModelFilter.bind(this));
-        await master.attr.relation.setQueryByModel(query, master.model);
+        if (this.meta.master.model) {
+            await this.meta.master.attr.relation.setQueryByModel(query, this.meta.master.model);
+        }
         const list = this.spawn('component/MetaList', {controller: this, query});
         const items = await list.getList();
         this.sendJson(items);
