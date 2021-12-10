@@ -1,3 +1,8 @@
+## 4.1.0
+
+* controller/DataController
+    - replace list-related action with a list action 
+
 ## 4.0.0
 
 * add sorting data actions
