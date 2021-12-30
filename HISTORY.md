@@ -1,7 +1,12 @@
+## 4.2.0
+
+* controller/DataController
+    - update names of condition operators
+
 ## 4.1.0
 
 * controller/DataController
-    - replace list-related action with a list action 
+    - replace list-related action with a list action
 
 ## 4.0.0
 

@@ -168,7 +168,7 @@ module.exports = class DataController extends Base {
     async actionDeleteMultiple () {
         this.checkCsrfToken();
         const request = this.getPostParams();
-        const meta = this.setMetaParams(request);
+        this.setMetaParams(request);
         if (!Array.isArray(request.ids)) {
             throw new BadRequest('Invalid ID array');
         }
@@ -227,7 +227,7 @@ module.exports = class DataController extends Base {
             await query.security.resolveAttrsOnList(query.view);
             return query.security.access.assignObjectFilter(query);
         }
-        return query.where(['FALSE']);
+        return query.where(['false']);
     }
 
     createMetaTransit () {
