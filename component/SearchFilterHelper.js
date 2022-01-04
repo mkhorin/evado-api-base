@@ -7,34 +7,85 @@ const Base = require('areto/base/Base');
 
 module.exports = class SearchFilterHelper extends Base {
 
-    static getColumns (attrs, depth) {
-        const columns = [];
-        for (const attr of attrs) {
-            let data = {
-                name: attr.name,
-                label: attr.title,
-                type: this.getAttrType(attr),
-                format: attr.getFormat(),
-                utc: attr.isUTC(),
-                translate: `meta.${attr.translationKey}`
-            };
-            if (attr.relation) {
-                depth = depth === undefined ? attr.searchDepth : depth;
-                this.setRelationData(attr, data, depth);
-            } else if (attr.enum) {
-                this.setEnumData(attr, data);
-            } else if (attr.isState()) {
-                this.setStateData(attr, data);
-            } else if (attr.isClass()) {
-                this.setClassData(attr, data);
-            } else if (attr.isEmbeddedModel()) {
-                this.setEmbeddedModelData(attr, data);
-            }
-            if (data) {
-                columns.push(data);
-            }
+    static getColumns (cls) {
+        const columns = this.getAttrColumns(cls);
+        const descendantColumn = this.getDescendantColumn(cls);
+        if (descendantColumn) {
+            columns.push(descendantColumn);
         }
         return columns;
+    }
+
+    static getAttrColumns (cls, depth) {
+        const columns = [];
+        for (const attr of cls.searchAttrs) {
+            columns.push(this.getAttrColumn(attr, depth));
+        }
+        return columns;
+    }
+
+    static getAttrColumn (attr, depth) {
+        if (attr.relation) {
+            return this.getRelationData(attr, depth);
+        }
+        if (attr.enum) {
+            return this.getEnumData(attr);
+        }
+        if (attr.isState()) {
+            return this.getStateData(attr);
+        }
+        if (attr.isClass()) {
+            return this.getClassData(attr);
+        }
+        if (attr.isEmbeddedModel()) {
+            return this.getEmbeddedModelData(attr);
+        }
+        return this.getDefaultData(attr);
+    }
+
+    static getDescendantColumn (parent) {
+        const items = [];
+        for (const cls of parent.getDescendants()) {
+            const data = this.getDescendantData(cls, parent);
+            if (data) {
+                items.push(data);
+            }
+        }
+        if (items.length) {
+            return {
+                name: '_descendant',
+                label: 'Attributes of descendant classes',
+                type: 'descendant',
+                items
+            };
+        }
+    }
+
+    static getDescendantData (cls, parent) {
+        const columns = [];
+        for (const attr of cls.searchAttrs) {
+            if (!parent.hasAttr(attr.name)) {
+                columns.push(this.getAttrColumn(attr));
+            }
+        }
+        if (columns.length) {
+            return {
+                value: cls.name,
+                text: `${cls.label} (${cls.name})`,
+                columns
+            };
+        }
+    }
+
+    static getDefaultData (attr) {
+        return {
+            name: attr.name,
+            label: attr.title,
+            type: this.getAttrType(attr),
+            format: attr.getFormat(),
+            utc: attr.isUTC(),
+            translate: `meta.${attr.translationKey}`
+        };
     }
 
     static getAttrType (attr) {
@@ -50,39 +101,50 @@ module.exports = class SearchFilterHelper extends Base {
         return attr.getType();
     }
 
-    static setRelationData (attr, data, depth) {
+    static getRelationData (attr, depth = attr.searchDepth) {
+        const data = this.getDefaultData(attr);
         if (depth > 0 && attr.relation.refClass) {
-            data.columns = this.getColumns(attr.relation.refClass.searchAttrs, depth - 1);
+            data.columns = this.getAttrColumns(attr.relation.refClass, depth - 1);
         }
         data.id = attr.id;
         data.type = 'selector';
+        return data;
     }
 
-    static setEnumData (attr, data) {
+    static getEnumData (attr) {
+        const data = this.getDefaultData(attr);
         data.items = attr.enum.getItems();
         data.valueType = attr.isNumber() ? 'number' : 'string';
         data.type = data.items.length ? 'selector' : data.valueType;
+        return data;
     }
 
-    static setStateData (attr, data) {
+    static getStateData (attr) {
+        const data = this.getDefaultData(attr);
         data.type = 'selector';
         data.items = {};
         for (const state of attr.class.states) {
             data.items[state.name] = state.title;
         }
+        return data;
     }
 
-    static setClassData (attr, data) {
+    static getClassData (attr) {
+        const data = this.getDefaultData(attr);
         data.type = 'selector';
         data.url = 'api/base/meta/list-class-select';
+        data.valueType = 'string';
+        return data;
     }
 
-    static setEmbeddedModelData (attr, data) {
+    static getEmbeddedModelData (attr) {
+        const data = this.getDefaultData(attr);
         if (attr.isUser()) {
             data.type = 'selector';
             data.url = 'office/user/list-select';
         } else {
             data.type = 'id';
         }
+        return data;
     }
 };

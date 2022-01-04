@@ -76,7 +76,7 @@ module.exports = class ExtraMeta extends Base {
 
     getClassData (item) {
         const data = this.getViewData(item);
-        data.filterColumns = SearchFilterHelper.getColumns(item.searchAttrs);
+        data.filterColumns = SearchFilterHelper.getColumns(item);
         return data;
     }
 
