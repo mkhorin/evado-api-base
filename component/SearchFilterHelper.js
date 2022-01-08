@@ -7,9 +7,9 @@ const Base = require('areto/base/Base');
 
 module.exports = class SearchFilterHelper extends Base {
 
-    static getColumns (cls) {
-        const columns = this.getAttrColumns(cls);
-        const descendantColumn = this.getDescendantColumn(cls);
+    static getColumns () {
+        const columns = this.getAttrColumns(...arguments);
+        const descendantColumn = this.getDescendantColumn(...arguments);
         if (descendantColumn) {
             columns.push(descendantColumn);
         }
@@ -43,10 +43,10 @@ module.exports = class SearchFilterHelper extends Base {
         return this.getDefaultData(attr);
     }
 
-    static getDescendantColumn (parent) {
+    static getDescendantColumn (parent, depth) {
         const items = [];
         for (const cls of parent.getDescendants()) {
-            const data = this.getDescendantData(cls, parent);
+            const data = this.getDescendantData(cls, parent, depth);
             if (data) {
                 items.push(data);
             }
@@ -61,11 +61,11 @@ module.exports = class SearchFilterHelper extends Base {
         }
     }
 
-    static getDescendantData (cls, parent) {
+    static getDescendantData (cls, parent, depth) {
         const columns = [];
         for (const attr of cls.searchAttrs) {
             if (!parent.hasAttr(attr.name)) {
-                columns.push(this.getAttrColumn(attr));
+                columns.push(this.getAttrColumn(attr, depth));
             }
         }
         if (columns.length) {
@@ -104,7 +104,7 @@ module.exports = class SearchFilterHelper extends Base {
     static getRelationData (attr, depth = attr.searchDepth) {
         const data = this.getDefaultData(attr);
         if (depth > 0 && attr.relation.refClass) {
-            data.columns = this.getAttrColumns(attr.relation.refClass, depth - 1);
+            data.columns = this.getColumns(attr.relation.refClass, depth - 1);
         }
         data.id = attr.id;
         data.type = 'selector';
