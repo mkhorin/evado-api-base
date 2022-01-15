@@ -161,7 +161,14 @@ module.exports = class DataController extends Base {
         this.setMetaParams(request);
         const model = await this.getReadModel(request.id);
         await this.security.resolveOnDelete(model);
-        await model.delete();
+        try {
+            await model.delete();
+        } catch (err) {
+            if (err instanceof HttpException) {
+                return this.sendJson([err.message, err.data?.params], err.status);
+            }
+            throw err;
+        }
         this.sendText(model.getId());
     }
 
@@ -172,13 +179,18 @@ module.exports = class DataController extends Base {
         if (!Array.isArray(request.ids)) {
             throw new BadRequest('Invalid ID array');
         }
-        const result = [];
+        const objects = [], errors = [];
         for (const id of request.ids) {
-            if (await this.deleteModelById(id)) {
-                result.push(id);
+            try {
+                const model = await this.getReadModel(id);
+                await this.security.resolveOnDelete(model);
+                await model.delete();
+                objects.push(id);
+            } catch (err) {
+                errors.push(this.prepareDeletionError(err, id));
             }
         }
-        this.sendText(result.join());
+        this.sendJson({objects, errors});
     }
 
     async actionTransit () {
@@ -300,19 +312,17 @@ module.exports = class DataController extends Base {
         this.send(this.translateMessageMap(model.getFirstErrorMap()), 400);
     }
 
-    async deleteModelById (id) {
-        try {
-            const model = await this.getReadModel(id);
-            await this.security.resolveOnDelete(model);
-            await model.delete();
-            result.push(id);
-        } catch (err) {
-            this.log('error', `Deletion failed: ${id}.${meta.class.id}:`, err);
+    prepareDeletionError (err, id) {
+        if (err instanceof HttpException) {
+            return [err.message, err.data?.params];
         }
+        this.log('error', `Deletion failed: ${id}.${this.meta.class.id}:`, err);
+        return ['Object {id}: {err}', {id, err}];
     }
 };
 module.exports.init(module);
 
 const BadRequest = require('areto/error/http/BadRequest');
 const Forbidden = require('areto/error/http/Forbidden');
+const HttpException = require('areto/error/HttpException');
 const Locked = require('areto/error/http/Locked');
