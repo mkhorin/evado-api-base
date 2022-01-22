@@ -205,7 +205,10 @@ module.exports = class ExtraMeta extends Base {
             format = {name: format};
         }
         if (!format) {
-            format = {name: this.getRelationAttrFormatName(attr)};
+            format = {};
+        }
+        if (!format.name) {
+            format.name = this.getRelationAttrFormatName(attr);
         }
         if (!format.url && attr.commandMap.edit) {
             format.url = this.urlManager.resolve(['model/update', {
