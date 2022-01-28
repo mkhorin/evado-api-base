@@ -15,6 +15,17 @@ module.exports = class MetaController extends Base {
         };
     }
 
+    actionClasses () {
+        const names = this.getPostParam('classes');
+        if (!names) {
+            return this.sendJson(this.getAllClassesData());
+        }
+        if (Array.isArray(names)) {
+            return this.sendJson(this.getClassDataByNames(names));
+        }
+        throw new BadRequest('Invalid classes');
+    }
+
     actionClass () {
         this.sendJson(this.getClassFromRequest().data);
     }
@@ -81,9 +92,30 @@ module.exports = class MetaController extends Base {
         }
         return result;
     }
+
+    getAllClassesData () {
+        const result = [];
+        for (const {data} of this.baseMeta.classes) {
+            result.push(data);
+        }
+        return result;
+    }
+
+    getClassDataByNames (names) {
+        const result = [];
+        for (const name of names) {
+            const cls = this.baseMeta.getClass(name);
+            if (!cls) {
+                throw new BadRequest(`Class not found: ${name}`);
+            }
+            result.push(cls.data);
+        }
+        return result;
+    }
 };
 module.exports.init(module);
 
+const BadRequest = require('areto/error/http/BadRequest');
 const EscapeHelper = require('areto/helper/EscapeHelper');
 const NotFound = require('areto/error/http/NotFound');
 const MetaSelectHelper = require('../component/MetaSelectHelper');
