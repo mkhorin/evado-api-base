@@ -191,12 +191,16 @@ module.exports = class ExtraMeta extends Base {
         if (attr.isFile()) {
             return 'thumbnail';
         }
-        if (attr.isTime()) {
+        if (attr.isTimeView()) {
             return 'time';
         }
-        if (attr.enum || attr.isClass() || attr.isEmbeddedModel() || attr.isState()) {
+        if (attr.isClassesView()) {
             return 'title';
         }
+        if (attr.isJson()) {
+            return 'json';
+        }
+        return 'title';
     }
 
     getRelationAttrFormat (attr) {
@@ -220,7 +224,7 @@ module.exports = class ExtraMeta extends Base {
     }
 
     getRelationAttrFormatName (attr) {
-        return attr.isThumbnail() ? 'thumbnail' : attr.isStringView() ? 'string' :  'link';
+        return attr.isThumbnailView() ? 'thumbnail' : attr.isStringView() ? 'string' :  'link';
     }
 
     prepareAttr (attr) {

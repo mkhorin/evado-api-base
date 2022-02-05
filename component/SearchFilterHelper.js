@@ -31,10 +31,10 @@ module.exports = class SearchFilterHelper extends Base {
         if (attr.enum) {
             return this.getEnumData(attr);
         }
-        if (attr.isState()) {
+        if (attr.isStateView()) {
             return this.getStateData(attr);
         }
-        if (attr.isClass()) {
+        if (attr.isClassView()) {
             return this.getClassData(attr);
         }
         if (attr.isEmbeddedModel()) {
