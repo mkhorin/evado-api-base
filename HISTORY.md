@@ -1,3 +1,11 @@
+## 4.3.0
+
+* component/SearchFilterHelper
+    - filter by attributes of descendant classes
+    - filter by attributes of descendant classes for nested objects
+* controller/MetaController
+    - get all classes at once
+
 ## 4.2.0
 
 * controller/DataController
@@ -44,7 +52,7 @@
 
 * controller/DataController
     - fix query creation
-    
+
 ## 1.7.0
 
 * controller/DataController

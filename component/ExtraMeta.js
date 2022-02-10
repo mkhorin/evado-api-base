@@ -312,7 +312,7 @@ module.exports = class ExtraMeta extends Base {
     getRelationThumbnailData (attr, value) {
         if (!value) {
             return value;
-        }        
+        }
         const config = attr.relation.refClass.behaviors.fileItem;
         if (!config) {
             return value;
