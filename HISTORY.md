@@ -27,7 +27,7 @@
 * controller/FileController
     - fix behaviors
 * controller/S3Controller
-    - add S3 storage controller 
+    - add S3 storage controller
 * controller/SignatureController
     - add digital signature controller
 
