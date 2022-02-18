@@ -99,9 +99,9 @@ module.exports = class DataController extends Base {
 
     async actionDefaults () {
         const request = this.getPostParams();
-        const meta = this.setMetaParams(request, 'create'); // read defaults to create
+        this.setCreationMetaParams(request);
         await this.setMasterMetaParams(request.master);
-        const model = meta.view.createModel(this.getSpawnConfig());
+        const model = this.meta.view.createModel(this.getSpawnConfig());
         await model.setDefaultValues();
         this.setDefaultMasterValue(model);
         await model.related.resolveEagers();
@@ -114,20 +114,19 @@ module.exports = class DataController extends Base {
     }
 
     async actionCreate () {
-        const meta = this.meta;
         const request = this.getPostParams();
-        this.setClassMetaParams(request.class);
-        meta.class = meta.class.getLastVersion();
-        this.setViewMetaParams(request.view, 'create');
-        this.defaultViewAssigned = !request.view;
-        if (meta.class.isAbstract()) {
+        this.setCreationMetaParams(request);
+        if (this.meta.class.isAbstract()) {
             throw new BadRequest('Unable to instantiate abstract class');
         }
         this.checkCsrfToken();
         await this.setMasterMetaParams(request.master);
-        const model = meta.view.createModel(this.getSpawnConfig());
+        const model = this.meta.view.createModel(this.getSpawnConfig());
         await model.setDefaultValues();
         this.setDefaultMasterValue(model);
+        if (model.isReadOnlyState()) {
+            throw new Locked('Read-only state');
+        }
         await this.security.resolveOnCreate(model);
         await this.security.resolveAttrsOnCreate(model);
         await this.save(request, model, 'create');
@@ -247,6 +246,14 @@ module.exports = class DataController extends Base {
             controller: this,
             security: this.security
         });
+    }
+
+    setCreationMetaParams (data) {
+        this.setClassMetaParams(data.class);
+        this.meta.class = this.meta.class.getLastVersion();
+        const view = this.meta.class.getView('create') || this.meta.class.getDefaultState()?.view;
+        this.setViewMetaParams(data.view, view?.name);
+        this.defaultViewAssigned = !data.view;
     }
 
     setMetaParams (data, defaultView) {
