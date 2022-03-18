@@ -49,12 +49,28 @@ module.exports = class ExtraMeta extends Base {
         return ObjectHelper.getValue(id, this._attrData);
     }
 
-    getPageTitle ({node, view}) {
-        return node.data.label || view?.data.label || node.title;
+    getPageTitleData (meta) {
+        if (meta.node.data.label || (meta.node.source && meta.node.label)) {
+            return meta.node;
+        }
+        if (meta.view?.data.label) {
+            return meta.view;
+        }
+        return meta.node;
     }
 
-    getPageDescription ({node, view}) {
-        return node.data.description || view?.data.description;
+    getPageDescriptionData ({node, view}) {
+        if (node.options.showDescription) {
+            if (node.source && node.hasDescription()) {
+                if (node.description) {
+                    return node;
+                }
+            } else if (node.description) {
+                return node;
+            } else if (view.description) {
+                return view;
+            }
+        }
     }
 
     prepareMeta (meta) {
