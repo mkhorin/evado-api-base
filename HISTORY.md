@@ -1,3 +1,9 @@
+## 4.4.0
+
+* component/ExtraMeta
+    - add dynamic node page title and description
+* remove trailing spaces
+
 ## 4.3.0
 
 * component/SearchFilterHelper

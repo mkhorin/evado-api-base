@@ -53,7 +53,7 @@ module.exports = class SearchFilterHelper extends Base {
         }
         if (items.length) {
             return {
-                name: '_descendant',
+                name: '$descendant',
                 label: 'Attributes of descendant classes',
                 type: 'descendant',
                 items
@@ -95,7 +95,7 @@ module.exports = class SearchFilterHelper extends Base {
         if (attr.isNumber()) {
             return 'number';
         }
-        if (attr.isText()) {
+        if (attr.isText() || attr.isFile()) {
             return 'string';
         }
         return attr.getType();
