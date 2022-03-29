@@ -307,16 +307,21 @@ module.exports = class DataController extends Base {
         }
     }
 
-    async save ({data}, model, action) {
+    async save ({data, validateOnly}, model, action) {
         const excludes = this.security.getForbiddenAttrs(action);
         model.load(data, excludes);
-        await model.save()
-            ? this.sendText(model.getId())
-            : this.handleModelError(model);
+        if (!await model.validate()) {
+            return this.handleModelError(model);
+        }
+        if (validateOnly) {
+            return this.sendStatus(Response.OK);
+        }
+        await model.forceSave();
+        this.sendText(model.getId());
     }
 
     handleModelError (model) {
-        this.send(this.translateMessageMap(model.getFirstErrorMap()), 400);
+        this.send(this.translateMessageMap(model.getFirstErrorMap()), Response.BAD_REQUEST);
     }
 
     prepareDeletionError (err, id) {
@@ -333,3 +338,4 @@ const BadRequest = require('areto/error/http/BadRequest');
 const Forbidden = require('areto/error/http/Forbidden');
 const HttpException = require('areto/error/HttpException');
 const Locked = require('areto/error/http/Locked');
+const Response = require('areto/web/Response');
