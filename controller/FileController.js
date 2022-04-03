@@ -23,7 +23,7 @@ module.exports = class FileController extends Base {
             customRule: behavior.rule
         });
         if (!await raw.upload(this.req, this.res)) {
-            return this.sendText(this.translate(raw.getFirstError()), 400);
+            return this.sendText(this.translate(raw.getFirstError()), Response.BAD_REQUEST);
         }
         this.sendJson({
             id: raw.getId(),
@@ -80,13 +80,13 @@ module.exports = class FileController extends Base {
         const behavior = this.createFileBehavior(model);
         const raw = await this.spawn(behavior.getRawClass()).findById(this.getPostParam('id')).one();
         if (!raw) {
-            return this.sendStatus(404);
+            return this.sendStatus(Response.NOT_FOUND);
         }
         if (raw.getOwner()) {
-            return this.sendStatus(400);
+            return this.sendStatus(Response.BAD_REQUEST);
         }
         await raw.delete();
-        this.sendStatus(200);
+        this.sendStatus(Response.OK);
     }
 
     setMetaParams () {
@@ -108,3 +108,4 @@ module.exports.init(module);
 const BadRequest = require('areto/error/http/BadRequest');
 const NotFound = require('areto/error/http/NotFound');
 const FileHelper = require('areto/helper/FileHelper');
+const Response = require('areto/web/Response');
