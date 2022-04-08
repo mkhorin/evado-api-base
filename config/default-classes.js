@@ -14,5 +14,6 @@ module.exports = {
     'meta/MetaTransit': require('evado/component/meta/MetaTransit'),
     'meta/MetaTreeGrid': require('evado/component/meta/MetaTreeGrid'),
 
+    'model/DataHistory': require('../model/DataHistory'),
     'model/RawFile': require('../model/RawFile'),
 };
