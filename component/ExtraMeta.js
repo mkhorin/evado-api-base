@@ -184,7 +184,7 @@ module.exports = class ExtraMeta extends Base {
             translate: `meta.${attr.view.translationKey}`,
             translateData: attr.translatable ? `meta.${attr.translationKey}` : false,
             maxCellHeight: attr.getOption('maxCellHeight'),
-            momentFormat: attr.getOption('momentFormat')
+            dateFormat: attr.getOption('dateFormat')
         };
         if (attr.isDate()) {
             data.utc = attr.isUTC();

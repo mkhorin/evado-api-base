@@ -42,7 +42,7 @@ module.exports = class S3Controller extends Base {
     }
 
     actionThumbnail () {
-        throw new BadRequest;
+        this.sendStatus(Response.METHOD_NOT_ALLOWED);
     }
 
     handleError (data, storage) {
@@ -59,5 +59,4 @@ module.exports = class S3Controller extends Base {
 };
 module.exports.init(module);
 
-const BadRequest = require('areto/error/http/BadRequest');
 const Response = require('areto/web/Response');

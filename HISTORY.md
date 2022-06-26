@@ -1,3 +1,12 @@
+## 4.5.0
+
+* controller/DataController
+    - add validation without save
+* controller/DataHistoryController
+    - add history of data changes
+* controller/S3Controller
+    - handle s3 storage unavailability         
+
 ## 4.4.0
 
 * component/ExtraMeta
