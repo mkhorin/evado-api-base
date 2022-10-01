@@ -124,7 +124,7 @@ module.exports = class DataController extends Base {
         const model = this.meta.view.createModel(this.getSpawnConfig());
         await model.setDefaultValues();
         this.setDefaultMasterValue(model);
-        if (model.isReadOnlyState()) {
+        if (this.meta.view.isReadOnly()) {
             throw new Locked('Read-only state');
         }
         await this.security.resolveOnCreate(model);
