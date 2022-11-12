@@ -30,7 +30,8 @@ module.exports = class S3Controller extends Base {
 
     async actionDownload () {
         this.setMetaParams();
-        const model = await this.getModel(this.getQueryParam('id'));
+        const {id} = this.getQueryParams();
+        const model = await this.getModel(id);
         await this.security.resolveOnTitle(model);
         const behavior = this.createFileBehavior(model);
         try {

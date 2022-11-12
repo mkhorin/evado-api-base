@@ -34,7 +34,8 @@ module.exports = class FileController extends Base {
 
     async actionDownload () {
         this.setMetaParams();
-        const model = await this.getModel(this.getQueryParam('id'));
+        const {id} = this.getQueryParams();
+        const model = await this.getModel(id);
         await this.security.resolveOnTitle(model);
         const behavior = this.createFileBehavior(model);
         const storage = behavior.getStorage();
@@ -50,13 +51,15 @@ module.exports = class FileController extends Base {
 
     async actionThumbnail () {
         this.setMetaParams();
-        const model = await this.getModel(this.getQueryParam('id'));
+        const {id} = this.getQueryParams();
+        const model = await this.getModel(id);
         await this.security.resolveOnTitle(model);
         const behavior = this.createFileBehavior(model);
         const storage = behavior.getStorage();
         const name = behavior.getName() || model.getId();
         const filename = behavior.getFilename();
-        const size = this.getQueryParam('s') || this.meta.view.options.thumbnail;
+        const {s} = this.getQueryParams();
+        const size = s || this.meta.view.options.thumbnail;
         if (size) {
             const file = await storage.ensureThumbnail(size, filename);
             if (!file) {
@@ -78,7 +81,8 @@ module.exports = class FileController extends Base {
         this.setMetaParams();
         const model = this.meta.view.createModel(this.getSpawnConfig());
         const behavior = this.createFileBehavior(model);
-        const raw = await this.spawn(behavior.getRawClass()).findById(this.getPostParam('id')).one();
+        const {id} = this.getPostParams();
+        const raw = await this.spawn(behavior.getRawClass()).findById(id).one();
         if (!raw) {
             return this.sendStatus(Response.NOT_FOUND);
         }
@@ -90,8 +94,9 @@ module.exports = class FileController extends Base {
     }
 
     setMetaParams () {
-        this.setClassMetaParams(this.getQueryParam('c'));
-        this.setViewMetaParams(this.getQueryParam('v'));
+        const {c, v} = this.getQueryParams();
+        this.setClassMetaParams(c);
+        this.setViewMetaParams(v);
         return this.meta;
     }
 

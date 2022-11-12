@@ -62,8 +62,9 @@ module.exports = class BaseController extends Base {
         this.meta.view = this.getMetadataView(name, this.meta.class, defaultName);
     }
 
-    setAttrMetaParams (param = this.getQueryParam('a')) {
-        const [attrName, viewName, className] = String(param).split('.');
+    setAttrMetaParams (data) {
+        const {a} = this.getQueryParams();
+        const [attrName, viewName, className] = String(data || a).split('.');
         this.setClassMetaParams(className);
         this.setViewMetaParams(viewName);
         this.meta.attr = this.meta.view.getAttr(attrName);

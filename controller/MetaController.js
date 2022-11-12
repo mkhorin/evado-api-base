@@ -16,7 +16,7 @@ module.exports = class MetaController extends Base {
     }
 
     actionClasses () {
-        const names = this.getPostParam('classes');
+        const {classes: names} = this.getPostParams();
         if (!names) {
             return this.sendJson(this.getAllClassesData());
         }
@@ -32,7 +32,8 @@ module.exports = class MetaController extends Base {
 
     actionView () {
         const cls = this.getClassFromRequest();
-        const view = cls.getView(this.getPostParam('view'));
+        const {view: name} = this.getPostParams();
+        const view = cls.getView(name);
         if (!view) {
             throw new NotFound('View not found');
         }
@@ -40,9 +41,13 @@ module.exports = class MetaController extends Base {
     }
 
     actionListClassSelect () {
-        const ancestor = this.baseMeta.getClass(this.getPostParam('ancestor'));
-        const classes = ancestor ? ancestor.getActiveDescendants() : this.baseMeta.classes;
-        this.sendJson(MetaSelectHelper.getLabelMap(this.filterBySearch(classes)));
+        const {ancestor: name} = this.getPostParams();
+        const ancestor = this.baseMeta.getClass(name);
+        const classes = ancestor 
+            ? ancestor.getActiveDescendants() 
+            : this.baseMeta.classes;
+        const items = this.filterBySearch(classes);
+        this.sendJson(MetaSelectHelper.getLabelMap(items));
     }
 
     actionListViewSelect () {
@@ -53,7 +58,8 @@ module.exports = class MetaController extends Base {
 
     actionListAttrSelect () {
         const cls = this.getClassFromRequest();
-        const view = cls.getView(this.getPostParam('view')) || cls;
+        const {view: name} = this.getPostParams();
+        const view = cls.getView(name) || cls;
         const items = this.filterBySearch(view.attrs);
         this.sendJson(MetaSelectHelper.getLabelMap(items));
     }
@@ -79,11 +85,11 @@ module.exports = class MetaController extends Base {
     }
 
     filterBySearch (items) {
-        const text = this.getPostParam('search');
-        if (typeof text !== 'string' || text.length < 2) {
+        const {search} = this.getPostParams();
+        if (typeof search !== 'string' || search.length < 2) {
             return items;
         }
-        const regex = new RegExp(EscapeHelper.escapeRegex(text), 'i');
+        const regex = new RegExp(EscapeHelper.escapeRegex(search), 'i');
         const result = [];
         for (const item of items) {
             if (regex.test(item.name) || regex.test(item.title)) {

@@ -34,7 +34,10 @@ module.exports = class DataController extends Base {
         this.setMetaParams(this.getPostParams(), 'list');
         await this.security.resolveOnList(this.meta.view);
         const query = this.meta.view.createQuery(this.getSpawnConfig());
-        const list = this.spawn('component/MetaList', {controller: this, query});
+        const list = this.spawn('component/MetaList', {
+            controller: this,
+            query
+        });
         const counter = await list.count();
         this.sendText(counter);
     }
@@ -44,7 +47,10 @@ module.exports = class DataController extends Base {
         await this.security.resolveAttrsOnList(this.meta.view);
         const query = this.meta.view.createQuery(this.getSpawnConfig()).withListData().withTitle();
         await this.resolveListFilter(query);
-        const list = this.spawn('component/MetaList', {controller: this, query});
+        const list = this.spawn('component/MetaList', {
+            controller: this,
+            query
+        });
         const items = await list.getList();
         this.sendJson(items);
     }
@@ -53,7 +59,10 @@ module.exports = class DataController extends Base {
         await this.resolveListParams();
         const query = this.meta.view.createQuery(this.getSpawnConfig()).withTitle();
         await this.resolveListFilter(query);
-        const list = this.spawn('meta/MetaSelect2', {controller: this, query});
+        const list = this.spawn('meta/MetaSelect2', {
+            controller: this,
+            query
+        });
         const items = await list.getList();
         this.sendJson(items);
     }
@@ -72,8 +81,9 @@ module.exports = class DataController extends Base {
 
     resolveListFilter (query) {
         query.setRelatedFilter(this.assignSecurityModelFilter.bind(this));
-        if (this.meta.master.model) {
-            return this.meta.master.attr.relation.setQueryByModel(query, this.meta.master.model);
+        const {attr, model} = this.meta.master;
+        if (model) {
+            return attr.relation.setQueryByModel(query, model);
         }
     }
 
@@ -272,7 +282,9 @@ module.exports = class DataController extends Base {
         if (!master.class) {
             throw new BadRequest(`Master class not found: ${data.class}`);
         }
-        master.view = data.view ? master.class.getView(data.view) : master.class;
+        master.view = data.view
+            ? master.class.getView(data.view)
+            : master.class;
         if (!master.view) {
             throw new BadRequest(`Master view not found: ${data.view}.${master.class}`);
         }
@@ -321,7 +333,8 @@ module.exports = class DataController extends Base {
     }
 
     handleModelError (model) {
-        this.send(this.translateMessageMap(model.getFirstErrorMap()), Response.BAD_REQUEST);
+        const errors = model.getFirstErrorMap();
+        this.send(this.translateMessageMap(errors), Response.BAD_REQUEST);
     }
 
     prepareDeletionError (err, id) {
