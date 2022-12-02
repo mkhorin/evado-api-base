@@ -29,9 +29,12 @@ module.exports = class SortOwnRelatedAction extends Base {
         if (!meta.canUpdateAttr(attr, model)) {
             throw new Forbidden('Access denied for modification');
         }
-        request.delete
-            ? await model.related.deleteOrder(attr)
-            : await model.related.updateOrder(attr, this.validateData(request.order));
+        if (request.delete) {
+            await model.related.deleteOrder(attr);
+        } else {
+            const data = this.validateData(request.order);
+            await model.related.updateOrder(attr, data);
+        }
         this.sendText('Done');
     }
 

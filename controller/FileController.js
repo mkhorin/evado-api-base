@@ -23,7 +23,8 @@ module.exports = class FileController extends Base {
             customRule: behavior.rule
         });
         if (!await raw.upload(this.req, this.res)) {
-            return this.sendText(this.translate(raw.getFirstError()), Response.BAD_REQUEST);
+            const error = raw.getFirstError();
+            return this.sendText(this.translate(error), Response.BAD_REQUEST);
         }
         this.sendJson({
             id: raw.getId(),
@@ -45,7 +46,8 @@ module.exports = class FileController extends Base {
             throw new NotFound(`File not found: ${filename}`);
         }
         const name = behavior.getName() || model.getId();
-        this.setHttpHeader(storage.getHeaders(name, behavior.getMediaType()));
+        const headers = storage.getHeaders(name, behavior.getMediaType());
+        this.setHttpHeader(headers);
         this.sendFile(file);
     }
 
@@ -72,7 +74,8 @@ module.exports = class FileController extends Base {
         if (!await FileHelper.getStat(file)) {
             throw new NotFound(`File not found: ${filename}`);
         }
-        this.setHttpHeader(storage.getHeaders(name, behavior.getMediaType()));
+        const headers = storage.getHeaders(name, behavior.getMediaType());
+        this.setHttpHeader(headers);
         this.sendFile(file);
     }
 
@@ -82,7 +85,8 @@ module.exports = class FileController extends Base {
         const model = this.meta.view.createModel(this.getSpawnConfig());
         const behavior = this.createFileBehavior(model);
         const {id} = this.getPostParams();
-        const raw = await this.spawn(behavior.getRawClass()).findById(id).one();
+        const RawClass = behavior.getRawClass();
+        const raw = await this.spawn(RawClass).findById(id).one();
         if (!raw) {
             return this.sendStatus(Response.NOT_FOUND);
         }

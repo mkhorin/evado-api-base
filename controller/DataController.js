@@ -104,7 +104,9 @@ module.exports = class DataController extends Base {
     async getModelTransitions (model) {
         const transit = this.createMetaTransit();
         await transit.resolve(model);
-        return model.transitions.map(({name, title, hint, options}) => ({name, title, hint, options}));
+        return model.transitions.map(({name, title, hint, options}) => {
+            return {name, title, hint, options};
+        });
     }
 
     async actionDefaults () {
@@ -224,7 +226,8 @@ module.exports = class DataController extends Base {
     }
 
     getReadModel (id) {
-        return this.getModelByQuery(this.getModelQuery(id).withReadData());
+        const query = this.getModelQuery(id).withReadData();
+        return this.getModelByQuery(query);
     }
 
     getForbiddenViewModel (id) {
@@ -243,12 +246,16 @@ module.exports = class DataController extends Base {
     }
 
     async assignSecurityModelFilter (query) {
-        query.security = this.createMetaSecurity();
-        if (await query.security.resolveOnList(query.view, {skipAccessException: true})) {
-            await query.security.resolveAttrsOnList(query.view);
-            return query.security.access.assignObjectFilter(query);
+        const security = this.createMetaSecurity();
+        const allow = await security.resolveOnList(query.view, {
+            skipAccessException: true
+        });
+        if (!allow) {
+            return query.where(['false']);
         }
-        return query.where(['false']);
+        query.security = security;
+        await security.resolveAttrsOnList(query.view);
+        await security.access.assignObjectFilter(query);
     }
 
     createMetaTransit () {
@@ -260,8 +267,9 @@ module.exports = class DataController extends Base {
 
     setCreationMetaParams (data) {
         this.setClassMetaParams(data.class);
-        this.meta.class = this.meta.class.getLastVersion();
-        const view = this.meta.class.getView('create') || this.meta.class.getDefaultState()?.view;
+        const actualClass = this.meta.class.getLastVersion();
+        const view = actualClass.getView('create') || actualClass.getDefaultState()?.view;
+        this.meta.class = actualClass;
         this.setViewMetaParams(data.view, view?.name);
         this.defaultViewAssigned = !data.view;
     }
@@ -303,7 +311,8 @@ module.exports = class DataController extends Base {
             master.model = master.view.createModel(this.getSpawnConfig());
             return master;
         }
-        master.model = await master.view.createQuery(this.getSpawnConfig()).byId(data.id).one();
+        const query = master.view.createQuery(this.getSpawnConfig()).byId(data.id);
+        master.model = await query.one();
         if (!master.model) {
             throw new BadRequest(`Master object not found: ${data.id}.${master.view.id}`);
         }

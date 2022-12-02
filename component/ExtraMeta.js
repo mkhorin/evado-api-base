@@ -49,21 +49,25 @@ module.exports = class ExtraMeta extends Base {
         return ObjectHelper.getValue(id, this._attrData);
     }
 
-    getPageTitleData (meta) {
-        if (meta.node.data.label || (meta.node.source && meta.node.label)) {
-            return meta.node;
+    getPageTitleData ({node, view}) {
+        if (node.data.label || (node.source && node.label)) {
+            return node;
         }
-        if (meta.view?.data.label) {
-            return meta.view;
+        if (view?.data.label) {
+            return view;
         }
-        return meta.node;
+        return node;
     }
 
     getPageDescriptionData ({node, view}) {
         if (node.options.showDescription) {
-            if (node.source && node.hasDescription()) {
-                if (node.description) {
-                    return node;
+            if (node instanceof DynamicNode) {
+                if (node.provider.descriptionAttr) {
+                    if (node.description) {
+                        return node;
+                    }
+                } else if (node.source.description) {
+                    return node.source;
                 }
             } else if (node.description) {
                 return node;
@@ -240,7 +244,10 @@ module.exports = class ExtraMeta extends Base {
     }
 
     getRelationAttrFormatName (attr) {
-        return attr.isThumbnailView() ? 'thumbnail' : attr.isStringView() ? 'string' :  'link';
+        if (attr.isThumbnailView()) {
+            return 'thumbnail';
+        }
+        return attr.isStringView() ? 'string' : 'link';
     }
 
     prepareAttr (attr) {
@@ -293,7 +300,9 @@ module.exports = class ExtraMeta extends Base {
     }
 
     getFileOptions (Class) {
-        return Class === S3Behavior || Class.prototype instanceof S3Behavior ? this.s3 : this.file;
+        return Class === S3Behavior || Class.prototype instanceof S3Behavior
+            ? this.s3
+            : this.file;
     }
 
     isStorageThumbnails (view) {
@@ -355,3 +364,4 @@ const SearchFilterHelper = require('./SearchFilterHelper');
 const S3Behavior = require('evado-meta-base/behavior/S3Behavior');
 const SignatureBehavior = require('evado-meta-base/behavior/SignatureBehavior');
 const SortOrderBehavior = require('evado-meta-base/behavior/SortOrderBehavior');
+const DynamicNode = require('evado-meta-navigation/provider/DynamicNode');

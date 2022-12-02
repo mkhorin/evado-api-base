@@ -17,8 +17,8 @@ module.exports = class SortAction extends Base {
 
     async executeByView (view, request) {
         const attrName = request.column;
-        const attrNames = this.controller.extraMeta.getData(view).modalSortNames;
-        if (!attrNames.includes(attrName)) {
+        const {modalSortNames} = this.controller.extraMeta.getData(view);
+        if (!modalSortNames.includes(attrName)) {
             throw new BadRequest(`Not modal sortable attribute`);
         }
         const data = this.validateData(request.order);
@@ -51,5 +51,5 @@ module.exports = class SortAction extends Base {
     }
 };
 
-const SortOrderBehavior = require('evado-meta-base/behavior/SortOrderBehavior');
 const BadRequest = require('areto/error/http/BadRequest');
+const SortOrderBehavior = require('evado-meta-base/behavior/SortOrderBehavior');

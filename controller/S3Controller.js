@@ -17,7 +17,8 @@ module.exports = class S3Controller extends Base {
         });
         raw.setData(this.getPostParams());
         if (!await raw.save()) {
-            return this.sendText(this.translate(raw.getFirstError()), Response.BAD_REQUEST);
+            const error = raw.getFirstError();
+            return this.sendText(this.translate(error), Response.BAD_REQUEST);
         }
         try {
             const id = raw.getId();
