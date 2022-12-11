@@ -26,7 +26,8 @@ module.exports = class SignatureController extends Base {
         const behavior = await this.resolveSignatureBehavior(params);
         const model = await behavior.createSignature(params);
         if (!await model.save()) {
-            throw new BadRequest(model.getFirstError().toString());
+            const error = model.getFirstError();
+            throw new BadRequest(error?.toString());
         }
         this.send('Digital signature created');
     }
@@ -39,7 +40,8 @@ module.exports = class SignatureController extends Base {
         if (!behavior) {
             throw new BadRequest('Invalid signature behavior');
         }
-        if (!await behavior.canCreateSignature(this.createMetaSecurity())) {
+        const security = this.createMetaSecurity();
+        if (!await behavior.canCreateSignature(security)) {
             throw new Forbidden('Creating a signature is forbidden');
         }
         if (await behavior.countUserSignatures(this.user)) {

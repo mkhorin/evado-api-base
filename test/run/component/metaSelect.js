@@ -4,7 +4,7 @@
 'use strict';
 
 const {expect} = require('chai');
-const MetaSelectHelper = require('../../../component/MetaSelectHelper');
+const Helper = require('../../../component/MetaSelectHelper');
 
 describe('MetaSelectHelper', ()=> {
 
@@ -13,8 +13,8 @@ describe('MetaSelectHelper', ()=> {
             name: 'name',
             data: {}
         };
-        expect(MetaSelectHelper.getLabelText(item)).to.eql('name');
+        expect(Helper.getLabelText(item)).to.eql('name');
         item.data.label = 'label';
-        expect(MetaSelectHelper.getLabelText(item)).to.eql('label (name)');
+        expect(Helper.getLabelText(item)).to.eql('label (name)');
     });
 });

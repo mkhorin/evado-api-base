@@ -32,7 +32,8 @@ module.exports = class BaseController extends Base {
     }
 
     getModelQuery (id) {
-        return this.meta.view.createQuery(this.getSpawnConfig()).byId(id);
+        const config = this.getSpawnConfig();
+        return this.meta.view.createQuery(config).byId(id);
     }
 
     getMetadataClass (name) {

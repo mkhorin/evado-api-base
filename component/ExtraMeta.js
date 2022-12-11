@@ -49,17 +49,18 @@ module.exports = class ExtraMeta extends Base {
         return ObjectHelper.getValue(id, this._attrData);
     }
 
-    getPageTitleData ({node, view}) {
+    getPageTitleData ({node, report, view}) {
         if (node.data.label || (node.source && node.label)) {
             return node;
-        }
-        if (view?.data.label) {
+        } else if (view?.data.label) {
             return view;
+        } else if (report?.data.label) {
+            return report;
         }
         return node;
     }
 
-    getPageDescriptionData ({node, view}) {
+    getPageDescriptionData ({node, report, view}) {
         if (node.options.showDescription) {
             if (node instanceof DynamicNode) {
                 if (node.provider.descriptionAttr) {
@@ -71,8 +72,10 @@ module.exports = class ExtraMeta extends Base {
                 }
             } else if (node.description) {
                 return node;
-            } else if (view.description) {
+            } else if (view?.description) {
                 return view;
+            } else if (report?.description) {
+                return report;
             }
         }
     }
@@ -143,8 +146,10 @@ module.exports = class ExtraMeta extends Base {
         const names = ArrayHelper.getPropertyValues('attrName', configs);
         const result = [];
         for (const attr of view.attrs) {
-            if (attr.isSortable() && !attr.isReadOnly() && names.includes(attr.name)) {
-                result.push(attr.name);
+            if (attr.isSortable() && !attr.isReadOnly()) {
+                if (names.includes(attr.name)) {
+                    result.push(attr.name);
+                }
             }
         }
         return result;
@@ -197,7 +202,10 @@ module.exports = class ExtraMeta extends Base {
     }
 
     isHiddenAttr (attr) {
-        return attr.isHidden() || (attr.isClassAttr() && attr.isBackRef() && !attr.isEagerLoading());
+        if (attr.isHidden()) {
+            return true;
+        }
+        return attr.isClassAttr() && attr.isBackRef() && !attr.isEagerLoading();
     }
 
     getAttrFormat (attr) {
@@ -306,7 +314,11 @@ module.exports = class ExtraMeta extends Base {
     }
 
     isStorageThumbnails (view) {
-        return view.createModel({module: this.module}).createFileBehavior()?.isThumbnails();
+        const model = view.createModel({
+            module: this.module
+        });
+        const behavior = model.createFileBehavior();
+        return behavior?.isThumbnails();
     }
 
     getModelFileData (model, thumbnailSize) {

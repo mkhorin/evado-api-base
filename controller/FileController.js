@@ -17,7 +17,8 @@ module.exports = class FileController extends Base {
     async actionUpload () {
         await this.canUpload();
         this.setMetaParams();
-        const model = this.meta.view.createModel(this.getSpawnConfig());
+        const config = this.getSpawnConfig();
+        const model = this.meta.view.createModel(config);
         const behavior = this.createFileBehavior(model);
         const raw = this.spawn(behavior.getRawClass(), {
             customRule: behavior.rule
@@ -46,7 +47,8 @@ module.exports = class FileController extends Base {
             throw new NotFound(`File not found: ${filename}`);
         }
         const name = behavior.getName() || model.getId();
-        const headers = storage.getHeaders(name, behavior.getMediaType());
+        const type = behavior.getMediaType();
+        const headers = storage.getHeaders(name, type);
         this.setHttpHeader(headers);
         this.sendFile(file);
     }
@@ -74,7 +76,8 @@ module.exports = class FileController extends Base {
         if (!await FileHelper.getStat(file)) {
             throw new NotFound(`File not found: ${filename}`);
         }
-        const headers = storage.getHeaders(name, behavior.getMediaType());
+        const type = behavior.getMediaType();
+        const headers = storage.getHeaders(name, type);
         this.setHttpHeader(headers);
         this.sendFile(file);
     }
@@ -82,7 +85,8 @@ module.exports = class FileController extends Base {
     async actionDelete () {
         await this.canUpload();
         this.setMetaParams();
-        const model = this.meta.view.createModel(this.getSpawnConfig());
+        const config = this.getSpawnConfig();
+        const model = this.meta.view.createModel(config);
         const behavior = this.createFileBehavior(model);
         const {id} = this.getPostParams();
         const RawClass = behavior.getRawClass();

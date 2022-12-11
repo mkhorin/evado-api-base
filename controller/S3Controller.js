@@ -10,7 +10,8 @@ module.exports = class S3Controller extends Base {
     async actionUpload () {
         await this.canUpload();
         this.setMetaParams();
-        const model = this.meta.view.createModel(this.getSpawnConfig());
+        const config = this.getSpawnConfig();
+        const model = this.meta.view.createModel(config);
         const behavior = this.createFileBehavior(model);
         const raw = this.spawn(behavior.getRawClass(), {
             customRule: behavior.rule

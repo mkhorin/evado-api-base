@@ -33,7 +33,8 @@ module.exports = class DataController extends Base {
     async actionCount () {
         this.setMetaParams(this.getPostParams(), 'list');
         await this.security.resolveOnList(this.meta.view);
-        const query = this.meta.view.createQuery(this.getSpawnConfig());
+        const config = this.getSpawnConfig();
+        const query = this.meta.view.createQuery(config);
         const list = this.spawn('component/MetaList', {
             controller: this,
             query
@@ -45,7 +46,8 @@ module.exports = class DataController extends Base {
     async actionList () {
         await this.resolveListParams();
         await this.security.resolveAttrsOnList(this.meta.view);
-        const query = this.meta.view.createQuery(this.getSpawnConfig()).withListData().withTitle();
+        const config = this.getSpawnConfig();
+        const query = this.meta.view.createQuery(config).withListData().withTitle();
         await this.resolveListFilter(query);
         const list = this.spawn('component/MetaList', {
             controller: this,
@@ -57,7 +59,8 @@ module.exports = class DataController extends Base {
 
     async actionListSelect () {
         await this.resolveListParams();
-        const query = this.meta.view.createQuery(this.getSpawnConfig()).withTitle();
+        const config = this.getSpawnConfig();
+        const query = this.meta.view.createQuery(config).withTitle();
         await this.resolveListFilter(query);
         const list = this.spawn('meta/MetaSelect2', {
             controller: this,
@@ -113,7 +116,8 @@ module.exports = class DataController extends Base {
         const request = this.getPostParams();
         this.setCreationMetaParams(request);
         await this.setMasterMetaParams(request.master);
-        const model = this.meta.view.createModel(this.getSpawnConfig());
+        const config = this.getSpawnConfig();
+        const model = this.meta.view.createModel(config);
         await model.setDefaultValues();
         this.setDefaultMasterValue(model);
         await model.related.resolveEagers();
@@ -122,7 +126,8 @@ module.exports = class DataController extends Base {
         const security = this.security;
         await security.resolveOnCreate(model);
         await security.resolveAttrsOnCreate(model);
-        this.sendJson(model.output({security}));
+        const data = model.output({security});
+        this.sendJson(data);
     }
 
     async actionCreate () {
@@ -133,7 +138,8 @@ module.exports = class DataController extends Base {
         }
         this.checkCsrfToken();
         await this.setMasterMetaParams(request.master);
-        const model = this.meta.view.createModel(this.getSpawnConfig());
+        const config = this.getSpawnConfig();
+        const model = this.meta.view.createModel(config);
         await model.setDefaultValues();
         this.setDefaultMasterValue(model);
         if (this.meta.view.isReadOnly()) {
@@ -307,11 +313,12 @@ module.exports = class DataController extends Base {
         if (relation.refClass !== this.meta.class) {
             throw new BadRequest(`Meta class does not match master attribute reference class: ${master.attr.id}`);
         }
+        const config = this.getSpawnConfig();
         if (!data.id) {
-            master.model = master.view.createModel(this.getSpawnConfig());
+            master.model = master.view.createModel(config);
             return master;
         }
-        const query = master.view.createQuery(this.getSpawnConfig()).byId(data.id);
+        const query = master.view.createQuery(config).byId(data.id);
         master.model = await query.one();
         if (!master.model) {
             throw new BadRequest(`Master object not found: ${data.id}.${master.view.id}`);
@@ -323,7 +330,8 @@ module.exports = class DataController extends Base {
         const master = this.meta.master;
         const attr = master.attr?.relation.refAttr;
         if (attr?.relation && !model.has(attr)) {
-            model.set(attr, master.model.get(attr.relation.refAttrName));
+            const value = master.model.get(attr.relation.refAttrName);
+            model.set(attr, value);
             master.refAttr = attr;
         }
     }
@@ -343,7 +351,8 @@ module.exports = class DataController extends Base {
 
     handleModelError (model) {
         const errors = model.getFirstErrorMap();
-        this.send(this.translateMessageMap(errors), Response.BAD_REQUEST);
+        const messages = this.translateMessageMap(errors);
+        this.send(messages, Response.BAD_REQUEST);
     }
 
     prepareDeletionError (err, id) {

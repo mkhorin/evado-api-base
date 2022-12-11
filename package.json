@@ -1,6 +1,6 @@
 {
   "name": "evado-api-base",
-  "version": "4.5.3",
+  "version": "4.5.4",
   "description": "Evado Framework data access API module",
   "author": {
     "name": "Maxim Khorin",
