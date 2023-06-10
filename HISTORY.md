@@ -5,7 +5,7 @@
 * controller/DataHistoryController
     - add history of data changes
 * controller/S3Controller
-    - handle s3 storage unavailability         
+    - handle s3 storage unavailability
 
 ## 4.4.0
 

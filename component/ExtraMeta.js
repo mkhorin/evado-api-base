@@ -50,7 +50,9 @@ module.exports = class ExtraMeta extends Base {
     }
 
     getPageTitleData ({node, report, view}) {
-        if (node.data.label || (node.source && node.label)) {
+        if (node.data.label) {
+            return node;
+        } else if (node.source && node.label) {
             return node;
         } else if (view?.data.label) {
             return view;
@@ -205,7 +207,9 @@ module.exports = class ExtraMeta extends Base {
         if (attr.isHidden()) {
             return true;
         }
-        return attr.isClassAttr() && attr.isBackRef() && !attr.isEagerLoading();
+        return attr.isClassAttr()
+            && attr.isBackRef()
+            && !attr.isEagerLoading();
     }
 
     getAttrFormat (attr) {

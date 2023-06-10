@@ -45,7 +45,8 @@ module.exports = class SearchFilterHelper extends Base {
 
     static getDescendantColumn (parent, depth) {
         const items = [];
-        for (const cls of parent.getDescendants()) {
+        const descendants = parent.getDescendants();
+        for (const cls of descendants) {
             const data = this.getDescendantData(cls, parent, depth);
             if (data) {
                 items.push(data);
@@ -54,7 +55,7 @@ module.exports = class SearchFilterHelper extends Base {
         if (items.length) {
             return {
                 name: '$descendant',
-                label: 'Attributes of descendant classes',
+                label: '[Attributes of descendant classes]',
                 type: 'descendant',
                 items
             };
