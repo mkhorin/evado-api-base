@@ -94,7 +94,7 @@ module.exports = class DataController extends Base {
         const request = this.getPostParams();
         this.setMetaParams(request, 'edit');
         const model = await this.getReadModel(request.id);
-        const security = this.security;
+        const {security} = this;
         await security.resolveOnRead(model);
         await security.resolveAttrsOnRead(model);
         const result = model.output({security});
@@ -123,7 +123,7 @@ module.exports = class DataController extends Base {
         await model.related.resolveEagers();
         await model.related.resolveEmbeddedModels();
         await model.resolveCalcValues();
-        const security = this.security;
+        const {security} = this;
         await security.resolveOnCreate(model);
         await security.resolveAttrsOnCreate(model);
         const data = model.output({security});
@@ -288,7 +288,7 @@ module.exports = class DataController extends Base {
     }
 
     async setMasterMetaParams (data) {
-        const master = this.meta.master;
+        const {master} = this.meta;
         if (!data) {
             return master;
         }
@@ -306,7 +306,7 @@ module.exports = class DataController extends Base {
         if (!master.attr) {
             throw new BadRequest(`Master attribute not found: ${data.attr}.${master.view.id}`);
         }
-        const relation = master.attr.relation;
+        const {relation} = master.attr;
         if (!relation) {
             throw new BadRequest(`Master relation not found: ${master.attr.id}`);
         }
@@ -327,7 +327,7 @@ module.exports = class DataController extends Base {
     }
 
     setDefaultMasterValue (model) {
-        const master = this.meta.master;
+        const {master} = this.meta;
         const attr = master.attr?.relation.refAttr;
         if (attr?.relation && !model.has(attr)) {
             const value = master.model.get(attr.relation.refAttrName);

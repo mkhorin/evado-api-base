@@ -12,11 +12,10 @@ module.exports = class SortOwnRelatedAction extends Base {
         const request = this.getPostParams();
         const meta = this.setMetaParams(request);
         const master = await this.setMasterMetaParams(request.master);
-        const attr = master.attr;
+        const {attr, model} = master;
         if (!attr.relation.isSortable()) {
             throw new BadRequest('Not sortable relation');
         }
-        const model = master.model;
         if (model.isNew()) {
             throw new BadRequest('Invalid master model');
         }
